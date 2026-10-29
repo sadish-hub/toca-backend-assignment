@@ -15,6 +15,7 @@ This is the **master plan** for implementing the Toca Boca Game Packs assignment
 1. Implement phases **strictly in order** (P0 → P7). One commit per phase.
 2. **Before implementing a phase**, ask for / produce a detailed plan under `docs/plans/` (e.g. `p0-scaffold.md`). Do not start coding that phase until the detailed plan is agreed.
 3. After the phase commit lands, mark progress here (status table below).
+4. **After implementing a phase, always update that phase’s Done checklist** in its `docs/plans/p*.md` (check every completed item) **and** this master-plan status table.
 
 ## Status
 
@@ -198,7 +199,8 @@ Each phase = **one focused git commit**. Do not touch files outside that phase�
 3. Follow `AGENTS.md`: TDD, unit + e2e, ESLint, ask when unsure.
 4. One commit per phase; no bundling phases.
 5. Before coding a phase: write/agree a detailed plan in `docs/plans/` (e.g. `p0-scaffold.md`). Update this master plan status table after the phase commit.
-6. P7 must use `Requirements.md` as the source of truth — not memory.
+6. **After implementing a phase, always update that phase’s Done checklist** in its `docs/plans/p*.md` (mark every completed item `[x]`) **and** the master-plan status table. A phase is not finished until those docs reflect Done.
+7. P7 must use `Requirements.md` as the source of truth — not memory.
 
 ## Agent notes
 

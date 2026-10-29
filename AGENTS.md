@@ -40,6 +40,7 @@ Do not invent endpoints, auth, caching, or remote services unless the human expl
 8. **Health endpoint required.** Expose `GET /health` (liveness at minimum; readiness may include DB ping). Wire Compose/API healthchecks to it where useful.
 9. **Vitest coverage thresholds are mandatory.** Configure and enforce meaningful coverage floors (lines/branches/functions/statements). Do not lower thresholds to make a failing change “pass” without asking.
 10. **Definition of Done is mandatory.** A task is not complete until every item in [Definition of Done](#definition-of-done-for-agents) is satisfied.
+11. **Update phase Done checklists.** After implementing a phase, always update that phase’s Done checklist in its `docs/plans/p*.md` (check every completed item) and the status table in `docs/plans/master-plan.md`.
 
 ---
 
@@ -189,3 +190,4 @@ A task is done only when **all** of the following are true:
 - [ ] Production-ready (validation, errors, no secrets, Docker-friendly)
 - [ ] Ambiguities resolved by asking — not by guessing
 - [ ] Architecture/README updated if setup or public behavior changed
+- [ ] Phase plan Done checklist updated (`docs/plans/p*.md` items checked) and master-plan status table reflects the phase

@@ -1,114 +1,180 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Game Packs API (Toca Boca assignment)
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Simplified TypeScript REST API for game packs stored in PostgreSQL. Assignment brief: [`Requirements.md`](Requirements.md). Design notes: [`Architecture.md`](Architecture.md).
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Stack
 
-## Description
+| Piece | Choice |
+|---|---|
+| Runtime / framework | Node.js, NestJS |
+| ORM / DB | TypeORM, PostgreSQL 16 |
+| Validation | `class-validator` / `class-transformer` |
+| Tests | Vitest + Supertest |
+| Package manager | **pnpm** |
+| Run locally | Docker Compose (`api` + `db`) on port **8080** |
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Quick start (reviewers)
 
-## Project setup
+No local `.env` is required. Env vars are set in `docker-compose.yml`.
 
 ```bash
-$ npm install
+docker compose up --build
+# or: make up
 ```
 
-## Compile and run the project
+(`Requirements.md` writes `docker compose -up`; the correct Compose V2 command is `docker compose up`.)
+
+When the stack is healthy:
+
+- API: [http://localhost:8080](http://localhost:8080)
+- Health: [http://localhost:8080/health](http://localhost:8080/health)
+
+Compose runs migrations on API start, then boots Nest. Postgres is **not** published on the host (reachable only on the Compose network as hostname `db`).
+
+Stop with:
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+docker compose down
+# or: make down
 ```
 
-## Run tests
+## Local development (optional)
+
+Requires [pnpm](https://pnpm.io/) and a dedicated Postgres container named `toca-postgres` (do not reuse unrelated Postgres containers).
 
 ```bash
-# unit tests
-$ npm run test
+# Example one-off DB (host port 5432; use 55432 if busy and set DATABASE_PORT)
+docker run -d --name toca-postgres \
+  -e POSTGRES_USER=toca \
+  -e POSTGRES_PASSWORD=toca \
+  -e POSTGRES_DB=toca_packs \
+  -p 5432:5432 \
+  postgres:16
 
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+pnpm install          # or: make install
+pnpm run migration:run  # or: make migrate
+pnpm run start:dev
 ```
 
-## Deployment
+Default local DB env (overridable): `DATABASE_HOST=localhost`, `DATABASE_PORT=5432`, `DATABASE_USER=toca`, `DATABASE_PASSWORD=toca`, `DATABASE_NAME=toca_packs`, `PORT=8080`.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+**Name clash:** Compose also uses `container_name: toca-postgres`. If a standalone container is still running, stop/remove it before `docker compose up` (`docker rm -f toca-postgres`).
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## Makefile
+
+| Target | What it runs |
+|---|---|
+| `make help` | List targets |
+| `make install` | `pnpm install` |
+| `make build` | `pnpm run build` |
+| `make lint` | `pnpm run lint` |
+| `make test` | `pnpm test` |
+| `make test-cov` | `pnpm run test:cov` |
+| `make test-e2e` | `pnpm run test:e2e` |
+| `make migrate` | `pnpm run migration:run` |
+| `make up` | `docker compose up --build -d` |
+| `make down` | `docker compose down` |
+| `make logs` | `docker compose logs -f api` |
+| `make health` | `curl -sS http://localhost:8080/health` |
+
+## API usage
+
+Create **child packs before parents** that reference them. Duplicate pack `id` → **409**. Invalid / cyclic `childPackIds` → **400**. Missing pack on content lookup → **404**. Inactive packs are still included in nested content resolution.
+
+### Health
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+curl -sS http://localhost:8080/health
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Healthy response includes app + database readiness (`status: "ok"`).
 
-## Observability
+### Create packs
 
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
+```bash
+# Child first
+curl -sS -X POST http://localhost:8080/packs \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "id": "pack.classroom",
+    "packName": "The Classroom Pack",
+    "active": true,
+    "price": 5,
+    "content": ["furniture.desk"],
+    "childPackIds": []
+  }'
 
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
+# Parent referencing the child
+curl -sS -X POST http://localhost:8080/packs \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "id": "pack.school",
+    "packName": "The School Pack",
+    "active": true,
+    "price": 10,
+    "content": ["furniture.whiteboard"],
+    "childPackIds": ["pack.classroom"]
+  }'
+```
 
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
+`content` and `childPackIds` are optional (omit or use `[]`).
 
-## Resources
+### List packs
 
-Check out a few resources that may come in handy when working with NestJS:
+```bash
+curl -sS http://localhost:8080/packs
+```
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observer](https://observer.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+### Nested pack content (flat, unique)
 
-## Support
+```bash
+curl -sS http://localhost:8080/packs/pack.school/content
+# e.g. ["furniture.whiteboard","furniture.desk"]
+```
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## Tests
 
-## Stay in touch
+```bash
+make test       # unit
+make test-e2e   # e2e (needs DB; Compose or local toca-postgres)
+make test-cov   # coverage thresholds enforced
+make lint
+```
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+## Project layout
 
-## License
+```text
+src/
+  packs/          # POST/GET packs, nested content (BFS + cycle checks)
+  health/         # GET /health (app + DB readiness)
+  database/       # TypeORM config + data source
+  migrations/
+test/             # e2e specs
+docs/plans/       # phased implementation plans
+docs/AI_USAGE.md  # AI tools + prompt history
+docker-compose.yml
+Dockerfile
+Makefile
+```
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+## Notes for reviewers
+
+- Port **8080** must be free on the host.
+- One-command run is `docker compose up` / `docker compose up --build` (or `make up`). No reviewer-supplied env files.
+- Compose DB is internal-only (no host `5432` publish), which avoids clashing with other local Postgres instances.
+- The Dockerfile sets `strict-ssl false` during image install so builds succeed in environments that intercept TLS to the npm registry. Prefer enabling TLS verification in trusted networks when possible.
+- Agent rules for this repo: [`AGENTS.md`](AGENTS.md).
+
+## AI usage
+
+Development used **Cursor** (Composer / coding agents) and **Context7** (current library docs for NestJS, TypeORM, Vitest, Docker). See [`docs/AI_USAGE.md`](docs/AI_USAGE.md) for tools, purpose by phase, and chronological prompt history.
+
+## Assignment checklist
+
+Mirror of the boxes in [`Requirements.md`](Requirements.md). Final verification is **P7**.
+
+- [ ] Is written in TypeScript.
+- [ ] Includes all expected endpoints.
+- [ ] Has sufficient tests that are passing.
+- [ ] Has sufficient documentation.
+- [ ] Can be started with a single `docker compose up` command.

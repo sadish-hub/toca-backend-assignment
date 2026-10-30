@@ -26,12 +26,14 @@ export class CreatePackDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
+  @IsNotEmpty({ each: true })
   @ArrayUnique()
   content?: string[];
 
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
+  @IsNotEmpty({ each: true })
   @ArrayUnique()
   childPackIds?: string[];
 }

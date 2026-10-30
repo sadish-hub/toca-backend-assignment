@@ -25,6 +25,7 @@ migrate: ## Apply TypeORM migrations (needs local DATABASE_* / toca-postgres)
 	pnpm run migration:run
 
 up: ## Build, start api + db, wait until API is healthy
+	@bash ./scripts/check-compose-db-name.sh
 	docker compose up --build -d --wait
 	@echo "API ready at http://localhost:8080"
 

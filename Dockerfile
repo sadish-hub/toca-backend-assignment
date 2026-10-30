@@ -2,16 +2,23 @@
 
 FROM node:22-bookworm-slim AS build
 
-# Corporate/TLS-intercepting networks break registry.npmjs.org verification
-# (UNABLE_TO_GET_ISSUER_CERT_LOCALLY). Keep strict-ssl false so `docker compose build`
-# works here; prefer enabling TLS verification in trusted networks when possible.
-RUN npm config set strict-ssl false \
+# Default: verify TLS for registry.npmjs.org.
+# Corporate/TLS-intercepting networks may need:
+#   docker compose build --build-arg ALLOW_INSECURE_NPM_SSL=true
+# or in compose: build.args.ALLOW_INSECURE_NPM_SSL: "true"
+ARG ALLOW_INSECURE_NPM_SSL=false
+
+RUN if [ "$ALLOW_INSECURE_NPM_SSL" = "true" ]; then \
+      npm config set strict-ssl false; \
+    fi \
   && npm install -g pnpm@9.15.9
 
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml .npmrc ./
-RUN pnpm config set strict-ssl false \
+RUN if [ "$ALLOW_INSECURE_NPM_SSL" = "true" ]; then \
+      pnpm config set strict-ssl false; \
+    fi \
   && pnpm install --frozen-lockfile
 
 COPY nest-cli.json tsconfig.json tsconfig.build.json ./

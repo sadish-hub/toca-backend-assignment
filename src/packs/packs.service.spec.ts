@@ -3,7 +3,7 @@ import {
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, QueryFailedError, Repository } from 'typeorm';
 import { PackChild } from './entities/pack-child.entity.js';
 import { PackContent } from './entities/pack-content.entity.js';
 import { Pack } from './entities/pack.entity.js';
@@ -89,6 +89,62 @@ describe('PacksService', () => {
           price: 1,
         }),
       ).rejects.toBeInstanceOf(ConflictException);
+    });
+
+    it('maps Postgres unique violation on packs PK to ConflictException', async () => {
+      manager.findOne.mockResolvedValue(null);
+      manager.save.mockRejectedValue(
+        new QueryFailedError('INSERT INTO packs', [], {
+          code: '23505',
+          table: 'packs',
+        }),
+      );
+
+      await expect(
+        service.create({
+          id: 'pack.race',
+          packName: 'Race',
+          active: true,
+          price: 1,
+        }),
+      ).rejects.toBeInstanceOf(ConflictException);
+    });
+
+    it('maps unique violation via PK_packs_id constraint name to ConflictException', async () => {
+      manager.findOne.mockResolvedValue(null);
+      manager.save.mockRejectedValue(
+        new QueryFailedError('INSERT INTO packs', [], {
+          code: '23505',
+          constraint: 'PK_packs_id',
+        }),
+      );
+
+      await expect(
+        service.create({
+          id: 'pack.race-constraint',
+          packName: 'Race',
+          active: true,
+          price: 1,
+        }),
+      ).rejects.toBeInstanceOf(ConflictException);
+    });
+
+    it('rethrows non-unique QueryFailedError from create', async () => {
+      manager.findOne.mockResolvedValue(null);
+      const other = new QueryFailedError('INSERT INTO packs', [], {
+        code: '23503',
+        table: 'packs',
+      });
+      manager.save.mockRejectedValue(other);
+
+      await expect(
+        service.create({
+          id: 'pack.fk',
+          packName: 'FK',
+          active: true,
+          price: 1,
+        }),
+      ).rejects.toBe(other);
     });
 
     it('throws BadRequestException for self-referencing childPackIds', async () => {

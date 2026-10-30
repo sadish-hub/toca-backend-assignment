@@ -44,19 +44,21 @@ Mirror of the five boxes in [`Requirements.md`](Requirements.md#checklist):
 ## Compose curl transcript (summary)
 
 ```text
-POST /packs (child)  → 200 pack.classroom
-POST /packs (parent) → 200 pack.school with childPackIds: ["pack.classroom"]
+POST /packs (child)  → 201 Created pack.classroom
+POST /packs (parent) → 201 Created pack.school with childPackIds: ["pack.classroom"]
 GET  /packs          → both packs with required fields
 GET  /packs/pack.school/content → ["furniture.whiteboard","furniture.desk"]
 POST duplicate id    → 409
 GET  missing content → 404
 ```
 
+(`POST /packs` returns Nest’s default **201 Created**, matching e2e.)
+
 ## Gaps found and resolution
 
 | Gap | Action |
 |---|---|
-| Dockerfile `strict-ssl false` | **Tried remove**; `docker compose build --no-cache` failed with `UNABLE_TO_GET_ISSUER_CERT_LOCALLY` when installing pnpm from registry.npmjs.org. **Kept** `strict-ssl false` with an inline Dockerfile comment; README already documents this as environment-specific. |
-| Stale/orphan stack | Before verify, API was **unhealthy** (`ENOTFOUND db`) because a standalone `toca-postgres` was running without the Compose network. Resolved by `docker compose down`, `docker rm -f toca-postgres`, then `docker compose up --build -d` so Compose owns `toca-postgres` + `api`. Operational only — no product-behavior change. |
+| Dockerfile `strict-ssl false` | Default is now **secure TLS**. Opt in only when needed: `ALLOW_INSECURE_NPM_SSL=true` build-arg / Compose env (documented in Dockerfile + README). |
+| Stale/orphan stack | Standalone `toca-postgres` outside Compose caused API `ENOTFOUND db`. Mitigated: `make up` runs `scripts/check-compose-db-name.sh`; README troubleshooting; Compose comments + `toca-api` container name. |
 
-No Requirements-driven product gaps required code changes beyond documenting / retaining the SSL workaround.
+No Requirements-driven product gaps remain open for the official checklist.

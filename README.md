@@ -36,13 +36,13 @@ make up
 # or: docker compose up --build -d --wait
 ```
 
-`make up` builds, starts `api` + `db`, and blocks until the API healthcheck passes. (`docs/Requirements.md` writes `docker compose -up`; the correct Compose V2 command is `docker compose up`.)
+`make up` checks for a leftover one-off `toca-postgres` container, then builds, starts `api` + `db`, and blocks until the API healthcheck passes. (`docs/Requirements.md` writes `docker compose -up`; the correct Compose V2 command is `docker compose up`.)
 
 API: [http://localhost:8080](http://localhost:8080) · Health: [http://localhost:8080/health](http://localhost:8080/health)
 
 Optional check: `make health`
 
-Compose runs migrations on API start, then boots Nest. Postgres is **not** published on the host (hostname `db` on the Compose network only).
+Compose runs migrations on API start, then boots Nest. Postgres is **not** published on the host (hostname `db` on the Compose network only). Containers: `toca-postgres` (db), `toca-api` (api).
 
 ### 4. Try the API (example curls)
 
@@ -88,10 +88,11 @@ curl -sS http://localhost:8080/health
 ```bash
 make test       # unit
 make test-e2e   # e2e (starts throwaway Postgres, migrates, tests, removes it)
+# same bootstrap via pnpm: pnpm run test:e2e  →  scripts/run-e2e.sh
 # optional: make test-cov && make lint
 ```
 
-`make test-e2e` does **not** use or change the Compose stack. It runs `toca-postgres-e2e` on host port `55432`, applies migrations, runs Vitest, then deletes that container (all e2e data gone). Compose can stay up on `:8080` at the same time.
+`make test-e2e` / `pnpm run test:e2e` do **not** use or change the Compose stack. They run `scripts/run-e2e.sh` (throwaway `toca-postgres-e2e` on host port `55432`, migrations, Vitest, then delete that container). Compose can stay up on `:8080` at the same time.
 
 ### 6. Stop (full cleanup)
 
@@ -107,10 +108,11 @@ Removes containers, networks, the Postgres volume (all pack data), and Compose-b
 | Issue | Fix |
 |---|---|
 | Port **8080** in use | Stop the other process, or change the host mapping in Compose |
-| `toca-postgres` name conflict | Run `make down`, or `docker rm -f toca-postgres`, then `make up` |
+| `toca-postgres` name conflict / `ENOTFOUND db` | A one-off local Postgres reused the Compose DB name. `make up` detects this and exits with instructions. Fix: `docker rm -f toca-postgres` (or `make down`), then `make up` / `docker compose up --build -d --wait` |
 | API won’t become healthy | Check `make logs` / `docker compose logs -f api`; wait for DB health before the API finishes migrations |
 | Docker path / Desktop not running | Start Docker Desktop, confirm `docker compose version` works, then retry `make up` |
 | Pack “already exists” after restart | DB volume persisted; run `make down` then `make up` for a clean DB |
+| `pnpm install` / image build TLS errors (`UNABLE_TO_GET_ISSUER_CERT_LOCALLY`) | Build with insecure npm SSL **only** if needed: `ALLOW_INSECURE_NPM_SSL=true docker compose build` (or `make up` with that env var set) |
 
 ## Local development (optional)
 
@@ -142,9 +144,9 @@ Default local DB env (overridable): `DATABASE_HOST=localhost`, `DATABASE_PORT=54
 | `make lint` | `pnpm run lint` |
 | `make test` | `pnpm test` |
 | `make test-cov` | `pnpm run test:cov` |
-| `make test-e2e` | `scripts/run-e2e.sh` (throwaway `toca-postgres-e2e`, then Vitest) |
+| `make test-e2e` | `scripts/run-e2e.sh` (same as `pnpm run test:e2e`) |
 | `make migrate` | `pnpm run migration:run` |
-| `make up` | `docker compose up --build -d --wait` (blocks until API healthy) |
+| `make up` | Conflict-check `toca-postgres`, then `docker compose up --build -d --wait` |
 | `make down` | `docker compose down -v --rmi local --remove-orphans` (wipes DB volume + images) |
 | `make logs` | `docker compose logs -f api` |
 | `make health` | `curl -sS http://localhost:8080/health` |
@@ -179,9 +181,9 @@ Makefile
 ## Notes for reviewers
 
 - Port **8080** must be free on the host.
-- One-command run is `docker compose up` / `docker compose up --build` (or `make up`). No reviewer-supplied env files.
-- Compose DB is internal-only (no host `5432` publish), which avoids clashing with other local Postgres instances.
-- The Dockerfile sets `strict-ssl false` during image install. On this machine, removing it fails Compose builds with `UNABLE_TO_GET_ISSUER_CERT_LOCALLY` (TLS interception to registry.npmjs.org). Prefer enabling TLS verification in trusted networks when possible.
+- One-command run is `docker compose up` / `docker compose up --build` (or `make up`). No reviewer-supplied env files. Prefer `make up` so the orphan `toca-postgres` check runs first.
+- Compose DB is internal-only (no host `5432` publish), which avoids clashing with other local Postgres instances on port 5432 — but the fixed name `toca-postgres` still conflicts with a leftover one-off container (see troubleshooting).
+- Image builds verify TLS by default. On TLS-intercepting networks only: `ALLOW_INSECURE_NPM_SSL=true docker compose build` (build-arg / Compose env; see Dockerfile).
 - Agent rules for this repo: [`AGENTS.md`](AGENTS.md).
 
 ## AI usage

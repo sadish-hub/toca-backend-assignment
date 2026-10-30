@@ -349,6 +349,32 @@ describe('PacksController (e2e)', () => {
       .expect(400);
   });
 
+  it('POST /packs returns 400 for empty-string content ids', async () => {
+    await request(server())
+      .post('/packs')
+      .send({
+        id: 'pack.empty-content',
+        packName: 'Empty Content',
+        active: true,
+        price: 1,
+        content: [''],
+      })
+      .expect(400);
+  });
+
+  it('POST /packs returns 400 for empty-string childPackIds', async () => {
+    await request(server())
+      .post('/packs')
+      .send({
+        id: 'pack.empty-child',
+        packName: 'Empty Child',
+        active: true,
+        price: 1,
+        childPackIds: [''],
+      })
+      .expect(400);
+  });
+
   it('omitting childPackIds is allowed', async () => {
     await request(server())
       .post('/packs')

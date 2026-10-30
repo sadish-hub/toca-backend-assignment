@@ -1,7 +1,13 @@
+# Fixed container_name keeps local migrate docs simple, but a leftover one-off
+# `toca-postgres` (outside this Compose project) will block `db` and leave the
+# API unable to resolve hostname `db` (ENOTFOUND db). Use `make up` (conflict
+# check) or: docker rm -f toca-postgres && docker compose up --build -d --wait
 services:
   db:
     image: postgres:16
     container_name: toca-postgres
+    labels:
+      com.toca.role: compose-db
     environment:
       POSTGRES_USER: toca
       POSTGRES_PASSWORD: toca
@@ -15,7 +21,13 @@ services:
       retries: 10
 
   api:
-    build: .
+    build:
+      context: .
+      args:
+        # Default secure TLS. Set to "true" only on TLS-intercepting networks:
+        # ALLOW_INSECURE_NPM_SSL=true docker compose build
+        ALLOW_INSECURE_NPM_SSL: ${ALLOW_INSECURE_NPM_SSL:-false}
+    container_name: toca-api
     ports:
       - '8080:8080'
     environment:

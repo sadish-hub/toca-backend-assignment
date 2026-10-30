@@ -32,13 +32,41 @@ TypeORM entities + initial migration matching [`Architecture.md`](../../Architec
 | CLI | Separate ESM `DataSource` file; run with `typeorm-ts-node-esm` (repo is `"type": "module"`) |
 | Env keys | `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_USER`, `DATABASE_PASSWORD`, `DATABASE_NAME` (+ reuse `PORT` from P0) |
 | Local defaults | `localhost` / `5432` / `toca` / `toca` / `toca_packs` so reviewers can run without inventing names later in Compose |
+| Local Postgres | **Dedicated** Docker container `toca-postgres` only — never reuse unrelated local DBs (`account-postgres`, `keycloak-postgres`, etc.) |
+
+### Local Postgres container (mandatory)
+
+**Rule:** Always use a **dedicated** container named `toca-postgres` for this assignment. Never attach migrations or the app to unrelated existing Postgres containers.
+
+| Item | Value |
+|---|---|
+| Container name | `toca-postgres` |
+| Image | `postgres:16` |
+| `POSTGRES_USER` | `toca` |
+| `POSTGRES_PASSWORD` | `toca` |
+| `POSTGRES_DB` | `toca_packs` |
+| Host port | Prefer **5432** if free; if taken, use **55432** and set `DATABASE_PORT=55432` |
+
+Exact create command (5432 free):
+
+```bash
+docker run -d \
+  --name toca-postgres \
+  -e POSTGRES_USER=toca \
+  -e POSTGRES_PASSWORD=toca \
+  -e POSTGRES_DB=toca_packs \
+  -p 5432:5432 \
+  postgres:16
+```
+
+If 5432 is occupied, recreate with `-p 55432:5432` and export `DATABASE_PORT=55432` for CLI/app. Wait until ready: `docker exec toca-postgres pg_isready -U toca -d toca_packs`.
 
 ### Env defaults (documented)
 
 | Variable | Default |
 |---|---|
 | `DATABASE_HOST` | `localhost` |
-| `DATABASE_PORT` | `5432` |
+| `DATABASE_PORT` | `5432` (or `55432` when the dedicated container maps that host port) |
 | `DATABASE_USER` | `toca` |
 | `DATABASE_PASSWORD` | `toca` |
 | `DATABASE_NAME` | `toca_packs` |
@@ -86,8 +114,8 @@ Cycle rejection stays a **P5** service concern (schema only supports the graph).
    - `migration:revert`
 9. **Tests:** unit test(s) for entity metadata (table names / key columns via TypeORM `DataSource` with entities only, or lightweight column-name assertions). No packs HTTP e2e in P1. Keep coverage thresholds green (exclude `data-source.ts` / migrations from coverage if needed — do not lower thresholds).
 10. **Verify locally:**
-    - Start Postgres (e.g. one-off `docker run` postgres:16 with the default credentials — **not** project Compose yet).
-    - `pnpm run migration:run`
+    - Start **only** the dedicated `toca-postgres` container (command above). Do **not** reuse `account-postgres`, `keycloak-postgres`, or any other local Postgres.
+    - Wait for `pg_isready`, then `pnpm run migration:run` (set `DATABASE_PORT=55432` if that host mapping was used).
     - `pnpm run build` / `lint` / `test` / `test:cov`
     - App boots with DB up (smoke `pnpm run start`).
 11. **Docs:** write/update [`docs/plans/p1-database.md`](p1-database.md); set master-plan P1 detailed-plan link; after implement mark Done checklist `[x]` and status **done** (per AGENTS permanent rule).
@@ -110,3 +138,4 @@ Cycle rejection stays a **P5** service concern (schema only supports the graph).
 - Do not invent column names; follow Architecture.
 - Ask if Postgres cannot be started for migration verify — do not fake a migration “applied” without running it.
 - Package manager remains **pnpm** (P0).
+- **Never reuse** unrelated Postgres Docker containers for this project. Always create/use `toca-postgres` (`postgres:16`, credentials `toca`/`toca`/`toca_packs`). Prefer host port 5432; fall back to 55432 and document `DATABASE_PORT` if 5432 is busy.

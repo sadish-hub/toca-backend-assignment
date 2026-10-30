@@ -82,6 +82,8 @@ Each phase = **one focused git commit**. Do not touch files outside that phaseâ€
 
 **Done when:** Entities compile; migration generates/applies against a local Postgres (document command); no HTTP packs logic yet.
 
+**Local DB (locked):** Use a **dedicated** Docker container named `toca-postgres` (`postgres:16`, `POSTGRES_USER=toca`, `POSTGRES_PASSWORD=toca`, `POSTGRES_DB=toca_packs`). Prefer host port **5432**; if busy use **55432** and set `DATABASE_PORT` accordingly. **Never reuse** unrelated containers (`account-postgres`, `keycloak-postgres`, etc.). Exact `docker run` lives in [`p1-database.md`](p1-database.md).
+
 **Commit:** `feat: add TypeORM entities and Postgres migrations for packs`
 
 ---
@@ -206,6 +208,7 @@ Each phase = **one focused git commit**. Do not touch files outside that phaseâ€
 
 - When using NestJS, TypeORM, class-validator, Vitest, or Docker APIs: fetch current docs via **Context7** before writing code.
 - Do not invent outdated APIs from memory.
+- For local Postgres before Compose (P1 verify / migrations): always use dedicated `toca-postgres` â€” never reuse unrelated existing Postgres containers. See [`p1-database.md`](p1-database.md).
 
 ## Out of scope until asked
 

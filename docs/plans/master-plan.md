@@ -28,7 +28,7 @@ This is the **master plan** for implementing the Toca Boca Game Packs assignment
 | P4 Health + DB | done | [`p4-health-db.md`](p4-health-db.md) | `feat: include database readiness in health check` |
 | P5 Packs API | done | [`p5-packs-api.md`](p5-packs-api.md) | `feat: implement packs REST API with unit and e2e tests` |
 | P6 Makefile + README | done | [`p6-makefile-readme.md`](p6-makefile-readme.md) | `docs: add Makefile and README for setup and usage` |
-| P7 Requirements verify | pending | — | `chore: verify Requirements.md coverage and close gaps` |
+| P7 Requirements verify | done | [`p7-verify-requirements.md`](p7-verify-requirements.md) | `chore: verify Requirements.md coverage and close gaps` |
 
 ---
 

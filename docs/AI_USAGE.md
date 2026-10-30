@@ -20,6 +20,7 @@ Per [`Requirements.md`](Requirements.md), this submission used AI tools during p
 | P2–P4 Health / Docker | App health, Compose stack, DB readiness in `/health` |
 | P5 Packs API | DTOs, create/list/content, BFS aggregation, cycle handling, unit + e2e |
 | P6 Docs | Makefile, reviewer README, this AI disclosure |
+| P7 Verify | Requirements matrix, Compose/curl evidence, checklist artifact, Dockerfile SSL re-check |
 
 ## Chronological prompt history
 
@@ -73,10 +74,16 @@ Per [`Requirements.md`](Requirements.md), this submission used AI tools during p
 5. Implement with TDD (unit + e2e), cycle/self-child rejection, create children before parents.
 6. Follow-up questions: iterative BFS vs recursive functions for `GET /packs/:id/content` (chose iterative BFS).
 
-### P6 — Makefile + README (this phase)
+### P6 — Makefile + README
 
 1. Generate P6 plan → `docs/plans/p6-makefile-readme.md`.
 2. Add Makefile wrappers (pnpm + Compose), replace Nest starter README, document AI usage (this file), commit docs-only phase.
+
+### P7 — Requirements verify
+
+1. Generate P7 plan → `docs/plans/p7-verify-requirements.md`.
+2. Run lint/test/e2e/coverage/build; Compose up; curl health + packs create/list/content.
+3. Write `docs/REQUIREMENTS_CHECKLIST.md`; try removing Dockerfile `strict-ssl false` (kept after TLS failure); tick official checklist; one commit.
 
 ## Notes
 

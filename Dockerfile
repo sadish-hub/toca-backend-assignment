@@ -2,7 +2,9 @@
 
 FROM node:22-bookworm-slim AS build
 
-# Some environments intercept TLS to registry.npmjs.org; allow install to proceed.
+# Corporate/TLS-intercepting networks break registry.npmjs.org verification
+# (UNABLE_TO_GET_ISSUER_CERT_LOCALLY). Keep strict-ssl false so `docker compose build`
+# works here; prefer enabling TLS verification in trusted networks when possible.
 RUN npm config set strict-ssl false \
   && npm install -g pnpm@9.15.9
 

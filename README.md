@@ -181,7 +181,7 @@ Makefile
 - Port **8080** must be free on the host.
 - One-command run is `docker compose up` / `docker compose up --build` (or `make up`). No reviewer-supplied env files.
 - Compose DB is internal-only (no host `5432` publish), which avoids clashing with other local Postgres instances.
-- The Dockerfile sets `strict-ssl false` during image install so builds succeed in environments that intercept TLS to the npm registry. Prefer enabling TLS verification in trusted networks when possible.
+- The Dockerfile sets `strict-ssl false` during image install. On this machine, removing it fails Compose builds with `UNABLE_TO_GET_ISSUER_CERT_LOCALLY` (TLS interception to registry.npmjs.org). Prefer enabling TLS verification in trusted networks when possible.
 - Agent rules for this repo: [`AGENTS.md`](AGENTS.md).
 
 ## AI usage
@@ -190,10 +190,10 @@ Development used **Cursor** (Composer / coding agents) and **Context7** (current
 
 ## Assignment checklist
 
-Mirror of the boxes in [`docs/Requirements.md`](docs/Requirements.md). Final verification is **P7**.
+Mirror of the boxes in [`docs/Requirements.md`](docs/Requirements.md). Verified in **P7** — see [`docs/REQUIREMENTS_CHECKLIST.md`](docs/REQUIREMENTS_CHECKLIST.md).
 
-- [ ] Is written in TypeScript.
-- [ ] Includes all expected endpoints.
-- [ ] Has sufficient tests that are passing.
-- [ ] Has sufficient documentation.
-- [ ] Can be started with a single `docker compose up` command.
+- [x] Is written in TypeScript.
+- [x] Includes all expected endpoints.
+- [x] Has sufficient tests that are passing.
+- [x] Has sufficient documentation.
+- [x] Can be started with a single `docker compose up` command.

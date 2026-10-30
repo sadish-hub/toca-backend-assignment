@@ -6,9 +6,9 @@ This is the **master plan** for implementing the Toca Boca Game Packs assignment
 |---|---|
 | [`master-plan.md`](master-plan.md) | Roadmap, ownership, commits, agent rules (this file) |
 | `p0-*.md` … `p7-*.md` | Detailed plan for one phase — create only when starting that phase |
-| [`Architecture.md`](../../Architecture.md) | System design |
+| [`Architecture.md`](../Architecture.md) | System design |
 | [`AGENTS.md`](../../AGENTS.md) | Agent coding rules |
-| [`Requirements.md`](../../Requirements.md) | Assignment requirements (source of truth for P7) |
+| [`Requirements.md`](../Requirements.md) | Assignment requirements (source of truth for P7) |
 
 ## Workflow
 
@@ -74,7 +74,7 @@ Each phase = **one focused git commit**. Do not touch files outside that phase�
 
 ## P1 — Database layer (TypeORM + PostgreSQL schema)
 
-**Goal:** Entities + migrations matching `Architecture.md` (`packs`, `pack_children`, `pack_contents`).
+**Goal:** Entities + migrations matching `docs/Architecture.md` (`packs`, `pack_children`, `pack_contents`).
 
 **Owns:** `src/**/entities/`, TypeORM module/data-source, migrations folder, DB env keys via config (no Compose yet if possible — connection config ready for later).
 
@@ -154,7 +154,7 @@ Each phase = **one focused git commit**. Do not touch files outside that phase�
 
 **Goal:** Supporting commands + reviewer docs (setup, usage, AI usage notes per assignment).
 
-**Owns:** `Makefile`, `README.md` (replace/extend assignment stub with setup/usage while keeping assignment context clear). Sync `Architecture.md` only if structure drifted.
+**Owns:** `Makefile`, `README.md` (replace/extend assignment stub with setup/usage while keeping assignment context clear). Sync `docs/Architecture.md` only if structure drifted.
 
 **Depends on:** P3–P5 (commands reflect real scripts).
 
@@ -166,7 +166,7 @@ Each phase = **one focused git commit**. Do not touch files outside that phase�
 
 ## P7 — Verify against Requirements.md (final)
 
-**Goal:** Audit the finished work against `Requirements.md` and close any gaps before submission.
+**Goal:** Audit the finished work against `docs/Requirements.md` and close any gaps before submission.
 
 **Owns:** verification checklist artifact (e.g. `docs/REQUIREMENTS_CHECKLIST.md` or a checked section in README); only the minimal code/docs fixes needed for unmet requirements (may touch earlier areas — this is the only phase allowed to cross-cut for gap fixes).
 
@@ -202,7 +202,7 @@ Each phase = **one focused git commit**. Do not touch files outside that phase�
 4. One commit per phase; no bundling phases.
 5. Before coding a phase: write/agree a detailed plan in `docs/plans/` (e.g. `p0-scaffold.md`). Update this master plan status table after the phase commit.
 6. **After implementing a phase, always update that phase’s Done checklist** in its `docs/plans/p*.md` (mark every completed item `[x]`) **and** the master-plan status table. A phase is not finished until those docs reflect Done.
-7. P7 must use `Requirements.md` as the source of truth — not memory.
+7. P7 must use `docs/Requirements.md` as the source of truth — not memory.
 
 ## Agent notes
 

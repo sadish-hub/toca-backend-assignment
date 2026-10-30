@@ -1,6 +1,6 @@
 # P5 — Packs REST API implementation plan
 
-Source of truth: [`docs/plans/master-plan.md`](master-plan.md) + [`Requirements.md`](../../Requirements.md). One commit. Do not do Makefile/README (P6) or Requirements audit (P7).
+Source of truth: [`docs/plans/master-plan.md`](master-plan.md) + [`Requirements.md`](../Requirements.md). One commit. Do not do Makefile/README (P6) or Requirements audit (P7).
 
 | Field | Value |
 |---|---|

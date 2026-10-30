@@ -1,6 +1,6 @@
 # AI usage disclosure
 
-Per [`Requirements.md`](../Requirements.md), this submission used AI tools during planning, implementation, tests, and documentation. This file records **tools**, **purpose**, and a **chronological prompt history** (condensed narrative by phase—not a dump of internal tool payloads).
+Per [`Requirements.md`](Requirements.md), this submission used AI tools during planning, implementation, tests, and documentation. This file records **tools**, **purpose**, and a **chronological prompt history** (condensed narrative by phase—not a dump of internal tool payloads).
 
 ## Tools
 
@@ -14,7 +14,7 @@ Per [`Requirements.md`](../Requirements.md), this submission used AI tools durin
 | Area | How AI was used |
 |---|---|
 | Requirements exploration | High-level read of the assignment; Postgres vs DynamoDB tradeoffs; TypeORM/Vitest/stack choices |
-| Architecture & agent rules | `Architecture.md`, `AGENTS.md`, sequential master plan under `docs/plans/` |
+| Architecture & agent rules | `docs/Architecture.md`, `AGENTS.md`, sequential master plan under `docs/plans/` |
 | P0 Scaffold | NestJS + Vitest + ESLint + `@nestjs/config`, port 8080 |
 | P1 Database | TypeORM entities, migrations, dedicated `toca-postgres` |
 | P2–P4 Health / Docker | App health, Compose stack, DB readiness in `/health` |
@@ -29,7 +29,7 @@ Per [`Requirements.md`](../Requirements.md), this submission used AI tools durin
 2. Compare DynamoDB vs Postgres for nested packs; explain recursive SQL vs app-side `IN(...)` loops and BatchGet-like patterns; discuss caching and pagination (later scoped out of MVP).
 3. Confirm TypeORM + recursive SQL options; refine a single stack list (NestJS, TypeORM, `pg`, class-validator, Vitest, Docker).
 4. Discuss Context7 MCP for up-to-date library docs; include Context7 notes in agent plans.
-5. Design high-level architecture (Postgres + Node REST); lock NestJS + TypeORM; save to `Architecture.md`.
+5. Design high-level architecture (Postgres + Node REST); lock NestJS + TypeORM; save to `docs/Architecture.md`.
 6. Create `AGENTS.md` with TDD, unit+e2e, production-ready code, ask-when-unsure, ESLint, troubleshooting.
 7. Propose multi-phase delivery (DB, scaffold/health, Compose, packs+tests, Makefile/README); refine to sequential P0–P6 with file ownership; add **P7** Requirements verification; store as `docs/plans/master-plan.md`.
 8. Lock decisions: sequential commits, Vitest + Supertest, ask business rules at packs implementation.

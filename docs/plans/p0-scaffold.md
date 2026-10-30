@@ -23,7 +23,7 @@ NestJS TypeScript app boots locally on **8080**; ESLint + Vitest (+ coverage thr
 ## Approach (Context7-backed)
 
 - Scaffold with Nest CLI (`nest new`): docs note CLI can choose **ESM + Vitest** vs CommonJS + Jest — **choose Vitest**.
-- Existing repo already has docs/README/etc.: generate **into the repo root** (`nest new .` with skip-git / non-interactive flags as supported), then reconcile without deleting `docs/`, `Architecture.md`, `AGENTS.md`, `Requirements.md`.
+- Existing repo already has docs/README/etc.: generate **into the repo root** (`nest new .` with skip-git / non-interactive flags as supported), then reconcile without deleting `docs/` (including `docs/Architecture.md`, `docs/Requirements.md`), `AGENTS.md`.
 - Bootstrap per Nest docs: `NestFactory.create(AppModule)`, `ConfigModule.forRoot({ isGlobal: true })`, global `ValidationPipe`, listen on `PORT` default **8080** (assignment), not 3000.
 - Vitest coverage via `coverage.thresholds` (lines/statements/functions **80**, branches **70**) per AGENTS.md / Vitest coverage docs.
 - Install later-phase deps in **P0** so only this phase owns `package.json`: `@nestjs/config`, `class-validator`, `class-transformer`, `@nestjs/typeorm`, `typeorm`, `pg`, plus Supertest as a test dep (used from P2/P5).
@@ -73,6 +73,6 @@ AGENTS.md                # Jest → Vitest
 ## Agent notes for implementer
 
 - Re-fetch Context7 for NestJS / Vitest / class-validator before coding if anything is unclear.
-- Ask before deleting or overwriting `docs/`, `Architecture.md`, `Requirements.md`.
+- Ask before deleting or overwriting `docs/`, `docs/Architecture.md`, `docs/Requirements.md`.
 - Do not invent Nest CLI flags from memory — check `nest new --help` at implement time.
 - Do not invent outdated APIs from memory.

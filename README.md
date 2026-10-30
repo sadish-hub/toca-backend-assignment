@@ -1,6 +1,6 @@
 # Game Packs API (Toca Boca assignment)
 
-Simplified TypeScript REST API for game packs stored in PostgreSQL. Assignment brief: [`Requirements.md`](Requirements.md). Design notes: [`Architecture.md`](Architecture.md).
+Simplified TypeScript REST API for game packs stored in PostgreSQL. Assignment brief: [`docs/Requirements.md`](docs/Requirements.md). Design notes: [`docs/Architecture.md`](docs/Architecture.md).
 
 ## Stack
 
@@ -13,83 +13,45 @@ Simplified TypeScript REST API for game packs stored in PostgreSQL. Assignment b
 | Package manager | **pnpm** |
 | Run locally | Docker Compose (`api` + `db`) on port **8080** |
 
-## Quick start (reviewers)
+## Getting started (step-by-step)
 
-No local `.env` is required. Env vars are set in `docker-compose.yml`.
+Copy-paste friendly path for newcomers. No local `.env` is required — env vars live in `docker-compose.yml`.
 
-```bash
-docker compose up --build
-# or: make up
-```
+### 1. Prerequisites
 
-(`Requirements.md` writes `docker compose -up`; the correct Compose V2 command is `docker compose up`.)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (or Docker Engine + Compose V2)
+- Optional for local (non-Compose) dev: Node.js 20+ and [pnpm](https://pnpm.io/)
 
-When the stack is healthy:
-
-- API: [http://localhost:8080](http://localhost:8080)
-- Health: [http://localhost:8080/health](http://localhost:8080/health)
-
-Compose runs migrations on API start, then boots Nest. Postgres is **not** published on the host (reachable only on the Compose network as hostname `db`).
-
-Stop with:
+### 2. Clone
 
 ```bash
-docker compose down
-# or: make down
+git clone <repo-url>
+cd toca-backend-assignment-main
 ```
 
-## Local development (optional)
-
-Requires [pnpm](https://pnpm.io/) and a dedicated Postgres container named `toca-postgres` (do not reuse unrelated Postgres containers).
+### 3. Start the stack
 
 ```bash
-# Example one-off DB (host port 5432; use 55432 if busy and set DATABASE_PORT)
-docker run -d --name toca-postgres \
-  -e POSTGRES_USER=toca \
-  -e POSTGRES_PASSWORD=toca \
-  -e POSTGRES_DB=toca_packs \
-  -p 5432:5432 \
-  postgres:16
-
-pnpm install          # or: make install
-pnpm run migration:run  # or: make migrate
-pnpm run start:dev
+make up
+# or: docker compose up --build
 ```
 
-Default local DB env (overridable): `DATABASE_HOST=localhost`, `DATABASE_PORT=5432`, `DATABASE_USER=toca`, `DATABASE_PASSWORD=toca`, `DATABASE_NAME=toca_packs`, `PORT=8080`.
+(`docs/Requirements.md` writes `docker compose -up`; the correct Compose V2 command is `docker compose up`.)
 
-**Name clash:** Compose also uses `container_name: toca-postgres`. If a standalone container is still running, stop/remove it before `docker compose up` (`docker rm -f toca-postgres`).
-
-## Makefile
-
-| Target | What it runs |
-|---|---|
-| `make help` | List targets |
-| `make install` | `pnpm install` |
-| `make build` | `pnpm run build` |
-| `make lint` | `pnpm run lint` |
-| `make test` | `pnpm test` |
-| `make test-cov` | `pnpm run test:cov` |
-| `make test-e2e` | `pnpm run test:e2e` |
-| `make migrate` | `pnpm run migration:run` |
-| `make up` | `docker compose up --build -d` |
-| `make down` | `docker compose down` |
-| `make logs` | `docker compose logs -f api` |
-| `make health` | `curl -sS http://localhost:8080/health` |
-
-## API usage
-
-Create **child packs before parents** that reference them. Duplicate pack `id` → **409**. Invalid / cyclic `childPackIds` → **400**. Missing pack on content lookup → **404**. Inactive packs are still included in nested content resolution.
-
-### Health
+### 4. Wait until healthy
 
 ```bash
-curl -sS http://localhost:8080/health
+make health
+# or: curl -sS http://localhost:8080/health
 ```
 
-Healthy response includes app + database readiness (`status: "ok"`).
+API: [http://localhost:8080](http://localhost:8080) · Health: [http://localhost:8080/health](http://localhost:8080/health)
 
-### Create packs
+Compose runs migrations on API start, then boots Nest. Postgres is **not** published on the host (hostname `db` on the Compose network only).
+
+### 5. Try the API (example curls)
+
+Create **child packs before parents** that reference them.
 
 ```bash
 # Child first
@@ -115,31 +77,85 @@ curl -sS -X POST http://localhost:8080/packs \
     "content": ["furniture.whiteboard"],
     "childPackIds": ["pack.classroom"]
   }'
-```
 
-`content` and `childPackIds` are optional (omit or use `[]`).
-
-### List packs
-
-```bash
+# List packs
 curl -sS http://localhost:8080/packs
-```
 
-### Nested pack content (flat, unique)
-
-```bash
+# Nested content (flat, unique)
 curl -sS http://localhost:8080/packs/pack.school/content
-# e.g. ["furniture.whiteboard","furniture.desk"]
+
+# Health
+curl -sS http://localhost:8080/health
 ```
 
-## Tests
+### 6. Run tests
 
 ```bash
 make test       # unit
 make test-e2e   # e2e (needs DB; Compose or local toca-postgres)
-make test-cov   # coverage thresholds enforced
-make lint
+# optional: make test-cov && make lint
 ```
+
+### 7. Stop
+
+```bash
+make down
+# or: docker compose down
+```
+
+### Troubleshooting
+
+| Issue | Fix |
+|---|---|
+| Port **8080** in use | Stop the other process, or change the host mapping in Compose |
+| `toca-postgres` name conflict | Compose uses `container_name: toca-postgres`. Remove a leftover container first: `docker rm -f toca-postgres` |
+| API won’t become healthy | Check `make logs` / `docker compose logs -f api`; wait for DB health before the API finishes migrations |
+| Docker path / Desktop not running | Start Docker Desktop, confirm `docker compose version` works, then retry `make up` |
+
+## Local development (optional)
+
+Requires pnpm and a dedicated Postgres container named `toca-postgres` (do not reuse unrelated Postgres containers).
+
+```bash
+# Example one-off DB (host port 5432; use 55432 if busy and set DATABASE_PORT)
+docker run -d --name toca-postgres \
+  -e POSTGRES_USER=toca \
+  -e POSTGRES_PASSWORD=toca \
+  -e POSTGRES_DB=toca_packs \
+  -p 5432:5432 \
+  postgres:16
+
+pnpm install          # or: make install
+pnpm run migration:run  # or: make migrate
+pnpm run start:dev
+```
+
+Default local DB env (overridable): `DATABASE_HOST=localhost`, `DATABASE_PORT=5432`, `DATABASE_USER=toca`, `DATABASE_PASSWORD=toca`, `DATABASE_NAME=toca_packs`, `PORT=8080`.
+
+## Makefile
+
+| Target | What it runs |
+|---|---|
+| `make help` | List targets |
+| `make install` | `pnpm install` |
+| `make build` | `pnpm run build` |
+| `make lint` | `pnpm run lint` |
+| `make test` | `pnpm test` |
+| `make test-cov` | `pnpm run test:cov` |
+| `make test-e2e` | `pnpm run test:e2e` |
+| `make migrate` | `pnpm run migration:run` |
+| `make up` | `docker compose up --build -d` |
+| `make down` | `docker compose down` |
+| `make logs` | `docker compose logs -f api` |
+| `make health` | `curl -sS http://localhost:8080/health` |
+
+## API notes
+
+- Duplicate pack `id` → **409**
+- Invalid / cyclic `childPackIds` → **400**
+- Missing pack on content lookup → **404**
+- `content` and `childPackIds` are optional (omit or use `[]`)
+- Inactive packs are still included in nested content resolution
 
 ## Project layout
 
@@ -150,8 +166,11 @@ src/
   database/       # TypeORM config + data source
   migrations/
 test/             # e2e specs
-docs/plans/       # phased implementation plans
-docs/AI_USAGE.md  # AI tools + prompt history
+docs/
+  Requirements.md # assignment brief
+  Architecture.md # system design
+  AI_USAGE.md     # AI tools + prompt history
+  plans/          # phased implementation plans
 docker-compose.yml
 Dockerfile
 Makefile
@@ -171,7 +190,7 @@ Development used **Cursor** (Composer / coding agents) and **Context7** (current
 
 ## Assignment checklist
 
-Mirror of the boxes in [`Requirements.md`](Requirements.md). Final verification is **P7**.
+Mirror of the boxes in [`docs/Requirements.md`](docs/Requirements.md). Final verification is **P7**.
 
 - [ ] Is written in TypeScript.
 - [ ] Includes all expected endpoints.

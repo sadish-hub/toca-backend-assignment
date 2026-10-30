@@ -33,23 +33,18 @@ cd toca-backend-assignment-main
 
 ```bash
 make up
-# or: docker compose up --build
+# or: docker compose up --build -d --wait
 ```
 
-(`docs/Requirements.md` writes `docker compose -up`; the correct Compose V2 command is `docker compose up`.)
-
-### 4. Wait until healthy
-
-```bash
-make health
-# or: curl -sS http://localhost:8080/health
-```
+`make up` builds, starts `api` + `db`, and blocks until the API healthcheck passes. (`docs/Requirements.md` writes `docker compose -up`; the correct Compose V2 command is `docker compose up`.)
 
 API: [http://localhost:8080](http://localhost:8080) · Health: [http://localhost:8080/health](http://localhost:8080/health)
 
+Optional check: `make health`
+
 Compose runs migrations on API start, then boots Nest. Postgres is **not** published on the host (hostname `db` on the Compose network only).
 
-### 5. Try the API (example curls)
+### 4. Try the API (example curls)
 
 Create **child packs before parents** that reference them.
 
@@ -88,29 +83,34 @@ curl -sS http://localhost:8080/packs/pack.school/content
 curl -sS http://localhost:8080/health
 ```
 
-### 6. Run tests
+### 5. Run tests
 
 ```bash
 make test       # unit
-make test-e2e   # e2e (needs DB; Compose or local toca-postgres)
+make test-e2e   # e2e (starts throwaway Postgres, migrates, tests, removes it)
 # optional: make test-cov && make lint
 ```
 
-### 7. Stop
+`make test-e2e` does **not** use or change the Compose stack. It runs `toca-postgres-e2e` on host port `55432`, applies migrations, runs Vitest, then deletes that container (all e2e data gone). Compose can stay up on `:8080` at the same time.
+
+### 6. Stop (full cleanup)
 
 ```bash
 make down
-# or: docker compose down
+# or: docker compose down -v --rmi local --remove-orphans
 ```
+
+Removes containers, networks, the Postgres volume (all pack data), and Compose-built images. Next `make up` starts from an empty DB.
 
 ### Troubleshooting
 
 | Issue | Fix |
 |---|---|
 | Port **8080** in use | Stop the other process, or change the host mapping in Compose |
-| `toca-postgres` name conflict | Compose uses `container_name: toca-postgres`. Remove a leftover container first: `docker rm -f toca-postgres` |
+| `toca-postgres` name conflict | Run `make down`, or `docker rm -f toca-postgres`, then `make up` |
 | API won’t become healthy | Check `make logs` / `docker compose logs -f api`; wait for DB health before the API finishes migrations |
 | Docker path / Desktop not running | Start Docker Desktop, confirm `docker compose version` works, then retry `make up` |
+| Pack “already exists” after restart | DB volume persisted; run `make down` then `make up` for a clean DB |
 
 ## Local development (optional)
 
@@ -142,10 +142,10 @@ Default local DB env (overridable): `DATABASE_HOST=localhost`, `DATABASE_PORT=54
 | `make lint` | `pnpm run lint` |
 | `make test` | `pnpm test` |
 | `make test-cov` | `pnpm run test:cov` |
-| `make test-e2e` | `pnpm run test:e2e` |
+| `make test-e2e` | `scripts/run-e2e.sh` (throwaway `toca-postgres-e2e`, then Vitest) |
 | `make migrate` | `pnpm run migration:run` |
-| `make up` | `docker compose up --build -d` |
-| `make down` | `docker compose down` |
+| `make up` | `docker compose up --build -d --wait` (blocks until API healthy) |
+| `make down` | `docker compose down -v --rmi local --remove-orphans` (wipes DB volume + images) |
 | `make logs` | `docker compose logs -f api` |
 | `make health` | `curl -sS http://localhost:8080/health` |
 

@@ -40,8 +40,8 @@ Reviewers can discover how to **install/run/test** and **query the API** from th
 | `make test-cov` | `pnpm run test:cov` |
 | `make test-e2e` | `pnpm run test:e2e` |
 | `make migrate` | `pnpm run migration:run` (local DB; document `toca-postgres` / Compose) |
-| `make up` | `docker compose up --build -d` |
-| `make down` | `docker compose down` |
+| `make up` | `docker compose up --build -d --wait` (blocks until API healthy) |
+| `make down` | `docker compose down -v --rmi local --remove-orphans` (wipes DB volume + images) |
 | `make logs` | `docker compose logs -f api` |
 | `make health` | `curl -sS http://localhost:8080/health` |
 

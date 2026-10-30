@@ -18,17 +18,18 @@ test: ## Run unit tests
 test-cov: ## Run unit tests with coverage thresholds
 	pnpm run test:cov
 
-test-e2e: ## Run e2e tests
-	pnpm run test:e2e
+test-e2e: ## Run e2e against a throwaway Postgres container (Compose untouched)
+	bash ./scripts/run-e2e.sh
 
 migrate: ## Apply TypeORM migrations (needs local DATABASE_* / toca-postgres)
 	pnpm run migration:run
 
-up: ## Build and start api + db via Docker Compose
-	docker compose up --build -d
+up: ## Build, start api + db, wait until API is healthy
+	docker compose up --build -d --wait
+	@echo "API ready at http://localhost:8080"
 
-down: ## Stop Compose stack
-	docker compose down
+down: ## Stop stack and remove containers, networks, volumes, and built images
+	docker compose down -v --rmi local --remove-orphans
 
 logs: ## Follow api container logs
 	docker compose logs -f api

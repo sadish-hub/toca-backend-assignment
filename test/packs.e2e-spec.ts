@@ -32,7 +32,14 @@ describe('PacksController (e2e)', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    if (dataSource?.isInitialized) {
+      await dataSource.query(
+        'TRUNCATE TABLE pack_contents, pack_children, packs RESTART IDENTITY CASCADE',
+      );
+    }
+    if (app) {
+      await app.close();
+    }
   });
 
   const server = (): Server => app.getHttpServer() as Server;
@@ -108,6 +115,189 @@ describe('PacksController (e2e)', () => {
 
     expect(contentRes.body.sort()).toEqual(
       ['desk.student', 'furniture.whiteboard', 'swing.set'].sort(),
+    );
+  });
+
+  it('GET /packs/:id/content aggregates a 5-level chain with an overlapping content id', async () => {
+    // Leaf → … → root: e → d → c → b → a (create children before parents)
+    await request(server())
+      .post('/packs')
+      .send({
+        id: 'pack.e',
+        packName: 'Level E',
+        active: true,
+        price: 1,
+        content: ['c.shared', 'c.e-only'],
+      })
+      .expect(201);
+
+    await request(server())
+      .post('/packs')
+      .send({
+        id: 'pack.d',
+        packName: 'Level D',
+        active: true,
+        price: 1,
+        content: ['c.d'],
+        childPackIds: ['pack.e'],
+      })
+      .expect(201);
+
+    await request(server())
+      .post('/packs')
+      .send({
+        id: 'pack.c',
+        packName: 'Level C',
+        active: true,
+        price: 1,
+        content: ['c.c'],
+        childPackIds: ['pack.d'],
+      })
+      .expect(201);
+
+    await request(server())
+      .post('/packs')
+      .send({
+        id: 'pack.b',
+        packName: 'Level B',
+        active: false,
+        price: 1,
+        content: ['c.b'],
+        childPackIds: ['pack.c'],
+      })
+      .expect(201);
+
+    await request(server())
+      .post('/packs')
+      .send({
+        id: 'pack.a',
+        packName: 'Level A',
+        active: true,
+        price: 5,
+        content: ['c.shared', 'c.a-only'],
+        childPackIds: ['pack.b'],
+      })
+      .expect(201);
+
+    const contentRes = await request(server())
+      .get('/packs/pack.a/content')
+      .expect(200);
+
+    expect(contentRes.body.sort()).toEqual(
+      ['c.a-only', 'c.b', 'c.c', 'c.d', 'c.e-only', 'c.shared'].sort(),
+    );
+    expect(contentRes.body.filter((id: string) => id === 'c.shared')).toHaveLength(
+      1,
+    );
+  });
+
+  it('GET /packs/:id/content handles wide+deep mix and empty intermediate nodes', async () => {
+    // deep leaf under mid branch; empty intermediates on left branch
+    await request(server())
+      .post('/packs')
+      .send({
+        id: 'pack.mid.gg',
+        packName: 'Mid Great-Grandchild',
+        active: true,
+        price: 1,
+        content: ['c.deep', 'c.overlap'],
+      })
+      .expect(201);
+
+    await request(server())
+      .post('/packs')
+      .send({
+        id: 'pack.mid.g1',
+        packName: 'Mid Grandchild 1',
+        active: true,
+        price: 1,
+        content: ['c.mid-g1'],
+        childPackIds: ['pack.mid.gg'],
+      })
+      .expect(201);
+
+    await request(server())
+      .post('/packs')
+      .send({
+        id: 'pack.mid.g2',
+        packName: 'Mid Grandchild 2',
+        active: true,
+        price: 1,
+        content: ['c.overlap'],
+      })
+      .expect(201);
+
+    await request(server())
+      .post('/packs')
+      .send({
+        id: 'pack.mid',
+        packName: 'Mid',
+        active: true,
+        price: 1,
+        content: ['c.mid'],
+        childPackIds: ['pack.mid.g1', 'pack.mid.g2'],
+      })
+      .expect(201);
+
+    await request(server())
+      .post('/packs')
+      .send({
+        id: 'pack.left.leaf',
+        packName: 'Left Leaf',
+        active: true,
+        price: 1,
+        content: ['c.left-leaf'],
+      })
+      .expect(201);
+
+    await request(server())
+      .post('/packs')
+      .send({
+        id: 'pack.left.empty',
+        packName: 'Left Empty',
+        active: true,
+        price: 1,
+        childPackIds: ['pack.left.leaf'],
+      })
+      .expect(201);
+
+    await request(server())
+      .post('/packs')
+      .send({
+        id: 'pack.right',
+        packName: 'Right',
+        active: true,
+        price: 1,
+        content: ['c.right'],
+      })
+      .expect(201);
+
+    await request(server())
+      .post('/packs')
+      .send({
+        id: 'pack.root',
+        packName: 'Root',
+        active: true,
+        price: 10,
+        content: ['c.root'],
+        childPackIds: ['pack.left.empty', 'pack.mid', 'pack.right'],
+      })
+      .expect(201);
+
+    const contentRes = await request(server())
+      .get('/packs/pack.root/content')
+      .expect(200);
+
+    expect(contentRes.body.sort()).toEqual(
+      [
+        'c.deep',
+        'c.left-leaf',
+        'c.mid',
+        'c.mid-g1',
+        'c.overlap',
+        'c.right',
+        'c.root',
+      ].sort(),
     );
   });
 

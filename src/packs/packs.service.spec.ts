@@ -194,5 +194,132 @@ describe('PacksService', () => {
       );
       await expect(service.getContent('pack.parent')).resolves.toHaveLength(2);
     });
+
+    it('aggregates unique content across a 5-level deep chain', async () => {
+      packsRepository.findOne.mockResolvedValue({ id: 'pack.a', active: true });
+      packChildrenRepository.find.mockResolvedValue([
+        { parentPackId: 'pack.a', childPackId: 'pack.b' },
+        { parentPackId: 'pack.b', childPackId: 'pack.c' },
+        { parentPackId: 'pack.c', childPackId: 'pack.d' },
+        { parentPackId: 'pack.d', childPackId: 'pack.e' },
+      ]);
+      packContentsRepository.find.mockResolvedValue([
+        { packId: 'pack.a', contentId: 'c.a' },
+        { packId: 'pack.b', contentId: 'c.b' },
+        { packId: 'pack.c', contentId: 'c.c' },
+        { packId: 'pack.d', contentId: 'c.d' },
+        { packId: 'pack.e', contentId: 'c.e' },
+      ]);
+
+      await expect(service.getContent('pack.a')).resolves.toEqual(
+        expect.arrayContaining(['c.a', 'c.b', 'c.c', 'c.d', 'c.e']),
+      );
+      await expect(service.getContent('pack.a')).resolves.toHaveLength(5);
+    });
+
+    it('dedupes content shared between level 1 and level 5 of a deep chain', async () => {
+      packsRepository.findOne.mockResolvedValue({ id: 'pack.a', active: true });
+      packChildrenRepository.find.mockResolvedValue([
+        { parentPackId: 'pack.a', childPackId: 'pack.b' },
+        { parentPackId: 'pack.b', childPackId: 'pack.c' },
+        { parentPackId: 'pack.c', childPackId: 'pack.d' },
+        { parentPackId: 'pack.d', childPackId: 'pack.e' },
+      ]);
+      packContentsRepository.find.mockResolvedValue([
+        { packId: 'pack.a', contentId: 'c.shared' },
+        { packId: 'pack.b', contentId: 'c.b' },
+        { packId: 'pack.c', contentId: 'c.c' },
+        { packId: 'pack.d', contentId: 'c.d' },
+        { packId: 'pack.e', contentId: 'c.shared' },
+        { packId: 'pack.e', contentId: 'c.e-only' },
+      ]);
+
+      const result = await service.getContent('pack.a');
+      expect(result.sort()).toEqual([
+        'c.b',
+        'c.c',
+        'c.d',
+        'c.e-only',
+        'c.shared',
+      ]);
+    });
+
+    it('resolves a wide root with a deep mid-branch uniquely', async () => {
+      packsRepository.findOne.mockResolvedValue({ id: 'root', active: true });
+      packChildrenRepository.find.mockResolvedValue([
+        { parentPackId: 'root', childPackId: 'left' },
+        { parentPackId: 'root', childPackId: 'mid' },
+        { parentPackId: 'root', childPackId: 'right' },
+        { parentPackId: 'mid', childPackId: 'mid.g1' },
+        { parentPackId: 'mid', childPackId: 'mid.g2' },
+        { parentPackId: 'mid.g1', childPackId: 'mid.gg' },
+      ]);
+      packContentsRepository.find.mockResolvedValue([
+        { packId: 'root', contentId: 'c.root' },
+        { packId: 'left', contentId: 'c.left' },
+        { packId: 'mid', contentId: 'c.mid' },
+        { packId: 'right', contentId: 'c.right' },
+        { packId: 'mid.g1', contentId: 'c.mid-g1' },
+        { packId: 'mid.g2', contentId: 'c.overlap' },
+        { packId: 'mid.gg', contentId: 'c.overlap' },
+        { packId: 'mid.gg', contentId: 'c.deep' },
+      ]);
+
+      const result = await service.getContent('root');
+      expect(result.sort()).toEqual([
+        'c.deep',
+        'c.left',
+        'c.mid',
+        'c.mid-g1',
+        'c.overlap',
+        'c.right',
+        'c.root',
+      ]);
+    });
+
+    it('finds leaf content through empty intermediate packs', async () => {
+      packsRepository.findOne.mockResolvedValue({ id: 'root', active: true });
+      packChildrenRepository.find.mockResolvedValue([
+        { parentPackId: 'root', childPackId: 'empty.1' },
+        { parentPackId: 'empty.1', childPackId: 'empty.2' },
+        { parentPackId: 'empty.2', childPackId: 'leaf' },
+      ]);
+      packContentsRepository.find.mockResolvedValue([
+        { packId: 'leaf', contentId: 'c.leaf' },
+      ]);
+
+      await expect(service.getContent('root')).resolves.toEqual(['c.leaf']);
+    });
+
+    it('returns only root content when descendants have none', async () => {
+      packsRepository.findOne.mockResolvedValue({ id: 'root', active: true });
+      packChildrenRepository.find.mockResolvedValue([
+        { parentPackId: 'root', childPackId: 'child' },
+        { parentPackId: 'child', childPackId: 'grandchild' },
+      ]);
+      packContentsRepository.find.mockResolvedValue([
+        { packId: 'root', contentId: 'c.root' },
+      ]);
+
+      await expect(service.getContent('root')).resolves.toEqual(['c.root']);
+    });
+
+    it('dedupes identical content ids across many siblings', async () => {
+      packsRepository.findOne.mockResolvedValue({ id: 'root', active: true });
+      packChildrenRepository.find.mockResolvedValue([
+        { parentPackId: 'root', childPackId: 'sib.1' },
+        { parentPackId: 'root', childPackId: 'sib.2' },
+        { parentPackId: 'root', childPackId: 'sib.3' },
+      ]);
+      packContentsRepository.find.mockResolvedValue([
+        { packId: 'sib.1', contentId: 'c.same' },
+        { packId: 'sib.2', contentId: 'c.same' },
+        { packId: 'sib.3', contentId: 'c.same' },
+        { packId: 'sib.3', contentId: 'c.extra' },
+      ]);
+
+      const result = await service.getContent('root');
+      expect(result.sort()).toEqual(['c.extra', 'c.same']);
+    });
   });
 });

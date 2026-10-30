@@ -22,7 +22,7 @@ This is the **master plan** for implementing the Toca Boca Game Packs assignment
 | Phase | Status | Detailed plan | Commit |
 |---|---|---|---|
 | P0 Scaffold | done | [`p0-scaffold.md`](p0-scaffold.md) | `chore: scaffold NestJS app with Vitest, ESLint, and config` |
-| P1 Database | pending | — | `feat: add TypeORM entities and Postgres migrations for packs` |
+| P1 Database | done | [`p1-database.md`](p1-database.md) | `feat: add TypeORM entities and Postgres migrations for packs` |
 | P2 Health (app) | pending | — | `feat: add application health endpoint` |
 | P3 Docker Compose | pending | — | `chore: add Docker Compose for api and Postgres` |
 | P4 Health + DB | pending | — | `feat: include database readiness in health check` |

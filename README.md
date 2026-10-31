@@ -171,7 +171,8 @@ test/             # e2e specs
 docs/
   Requirements.md # assignment brief
   Architecture.md # system design
-  AI_USAGE.md     # AI tools + prompt history
+  AI_USAGE.md     # AI tools + purpose
+  AI_PROMPT_HISTORY.md  # complete submission prompt history
   plans/          # phased implementation plans
 docker-compose.yml
 Dockerfile
@@ -188,7 +189,7 @@ Makefile
 
 ## AI usage
 
-Development used **Cursor** (Composer / coding agents) and **Context7** (current library docs for NestJS, TypeORM, Vitest, Docker). See [`docs/AI_USAGE.md`](docs/AI_USAGE.md) for tools, purpose by phase, and chronological prompt history.
+Development used **Cursor** (Composer / coding agents) and **Context7** (current library docs for NestJS, TypeORM, Vitest, Docker). See [`docs/AI_USAGE.md`](docs/AI_USAGE.md) for tools and purpose by phase, and [`docs/AI_PROMPT_HISTORY.md`](docs/AI_PROMPT_HISTORY.md) for the complete submission prompt history.
 
 ## Assignment checklist
 

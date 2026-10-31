@@ -17,7 +17,7 @@ Commands use `pnpm` and Docker Compose V2. Docker CLI path used when the shell w
 | 7 | Code style / lint | **PASS** | `pnpm run lint` exit 0. Nest module layout is readable (controllers → services → entities). |
 | 8 | One-command Compose | **PASS** | `docker compose up --build -d` (or `make up`) starts `api` + `db`; no reviewer `.env`. Both healthy; API on `:8080`. Local-only (no remote services). |
 | 9 | README documentation | **PASS** | [`README.md`](../README.md): prerequisites, `make up` / Compose, health wait, curl usage, tests, troubleshooting, Makefile table. |
-| 10 | AI usage disclosure | **PASS** | [`AI_USAGE.md`](AI_USAGE.md) + README “AI usage” section: tools, purpose, chronological prompt history. |
+| 10 | AI usage disclosure | **PASS** | [`AI_USAGE.md`](AI_USAGE.md) (tools + purpose) + [`AI_PROMPT_HISTORY.md`](AI_PROMPT_HISTORY.md) (author-selected complete verbatim prompt history for submission) + README “AI usage” section. |
 | 11 | Official five checklist boxes | **PASS** | See below — all evidenced true. |
 
 ## Official Requirements checklist

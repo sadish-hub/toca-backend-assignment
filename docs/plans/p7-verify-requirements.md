@@ -1,12 +1,12 @@
-# P7 — Verify against Requirements.md
+# P7 — Verify against REQUIREMENTS.md
 
-Source of truth: [`docs/Requirements.md`](../Requirements.md). One commit. This phase may cross-cut **only** to close requirement gaps.
+Source of truth: [`docs/REQUIREMENTS.md`](../REQUIREMENTS.md). One commit. This phase may cross-cut **only** to close requirement gaps.
 
 | Field | Value |
 |---|---|
 | Phase | P7 — Requirements verify |
 | Status | Done |
-| Commit | `chore: verify Requirements.md coverage and close gaps` |
+| Commit | `chore: verify REQUIREMENTS.md coverage and close gaps` |
 
 ## Goal
 
@@ -55,7 +55,7 @@ Prove every Requirements area is covered, record a checked verification artifact
 5. Fix any failures (P7 cross-cut allowed); re-run affected gates.
 6. Address Dockerfile SSL policy as above.
 7. Mark P7 Done checklist + master-plan P7 **done**; tick assignment checklist section in README to match.
-8. **Commit:** `chore: verify Requirements.md coverage and close gaps`
+8. **Commit:** `chore: verify REQUIREMENTS.md coverage and close gaps`
 
 ## Done checklist (check only after verification)
 
@@ -68,7 +68,7 @@ Prove every Requirements area is covered, record a checked verification artifact
 
 ## Agent notes
 
-- Source of truth is [`docs/Requirements.md`](../Requirements.md), not memory.
+- Source of truth is [`docs/REQUIREMENTS.md`](../REQUIREMENTS.md), not memory.
 - Use full Docker binary path if shell `docker` wrapper is broken.
 - Never reuse unrelated Postgres containers; Compose `toca-postgres` / dedicated name only.
 - Update Done checklist after the phase lands.

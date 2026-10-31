@@ -17,7 +17,7 @@ User prompts used with AI tools during this assignment (tools and purpose are in
 
 5. 1. A, 2. Yes, 3. ask at implementation. Also create a plan.md file with the details
 
-6. Sorry i missed to add one more point as final pahse. Verify our implementations against Requirements.md file to check we cover all the areas of it.
+6. Sorry i missed to add one more point as final pahse. Verify our implementations against REQUIREMENTS.md file to check we cover all the areas of it.
 
 7. Also add this Agent notes - When using NestJS, TypeORM, class-validator, Vitest, or Docker APIs: fetch current docs via Context7 before writing code. - Do not invent outdated APIs from memory.
 
@@ -53,7 +53,7 @@ User prompts used with AI tools during this assignment (tools and purpose are in
 
 23. Generate implementation plan for P5
 
-24. 1. childpack is not mandatory (check Requirements.md), so dont throw an error. duplicate_id should thrw conflict ( i think if its different question than i understood let me know) 2. Check Requirements.md, if its mentioned that we should not consider active as false then we can skip it , otherwise include that
+24. 1. childpack is not mandatory (check REQUIREMENTS.md), so dont throw an error. duplicate_id should thrw conflict ( i think if its different question than i understood let me know) 2. Check REQUIREMENTS.md, if its mentioned that we should not consider active as false then we can skip it , otherwise include that
 
 25. Build
 
@@ -69,7 +69,7 @@ User prompts used with AI tools during this assignment (tools and purpose are in
 
 31. i want to have 5 levels nested child
 
-32. /review Get the requirements from docs/Requirements.md and review teh code
+32. /review Get the requirements from docs/REQUIREMENTS.md and review teh code
 
 33. /review-bugbot
 

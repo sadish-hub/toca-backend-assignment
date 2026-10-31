@@ -10,7 +10,7 @@ Source of truth: [`master-plan.md`](master-plan.md). One commit. Do not implemen
 
 ## Goal
 
-TypeORM entities + initial migration matching [`Architecture.md`](../Architecture.md) (`packs`, `pack_children`, `pack_contents`); Nest `TypeOrmModule` wired through `@nestjs/config`; migration CLI works against a local Postgres. **No** packs HTTP, health, or Compose.
+TypeORM entities + initial migration matching [`ARCHITECTURE.md`](../ARCHITECTURE.md) (`packs`, `pack_children`, `pack_contents`); Nest `TypeOrmModule` wired through `@nestjs/config`; migration CLI works against a local Postgres. **No** packs HTTP, health, or Compose.
 
 ## Explicit non-goals
 

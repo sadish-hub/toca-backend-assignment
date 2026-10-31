@@ -1,6 +1,6 @@
 # Requirements verification checklist (P7)
 
-Source of truth: [`Requirements.md`](Requirements.md). Verified against the running project on **2026-10-30**.
+Source of truth: [`REQUIREMENTS.md`](REQUIREMENTS.md). Verified against the running project on **2026-10-30**.
 
 Commands use `pnpm` and Docker Compose V2. Docker CLI path used when the shell wrapper was unreliable: `/Applications/Docker.app/Contents/Resources/bin/docker`.
 
@@ -22,7 +22,7 @@ Commands use `pnpm` and Docker Compose V2. Docker CLI path used when the shell w
 
 ## Official Requirements checklist
 
-Mirror of the five boxes in [`Requirements.md`](Requirements.md#checklist):
+Mirror of the five boxes in [`REQUIREMENTS.md`](REQUIREMENTS.md#checklist):
 
 - [x] Is written in TypeScript. — `pnpm run build` green; Nest/TS sources under `src/`.
 - [x] Includes all expected endpoints. — `POST /packs`, `GET /packs`, `GET /packs/:id/content` (+ `GET /health`). Verified via e2e + Compose curl.

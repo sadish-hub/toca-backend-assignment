@@ -1,6 +1,6 @@
 # AI usage disclosure
 
-Per [`Requirements.md`](Requirements.md), this submission used AI tools during planning, implementation, tests, and documentation. This file records **tools**, **purpose**, and points to the **complete submission prompt history**.
+Per [`REQUIREMENTS.md`](REQUIREMENTS.md), this submission used AI tools during planning, implementation, tests, and documentation. This file records **tools**, **purpose**, and points to the **complete submission prompt history**.
 
 ## Tools
 
@@ -14,7 +14,7 @@ Per [`Requirements.md`](Requirements.md), this submission used AI tools during p
 | Area | How AI was used |
 |---|---|
 | Requirements exploration | High-level read of the assignment; Postgres vs DynamoDB tradeoffs; TypeORM/Vitest/stack choices |
-| Architecture & agent rules | `docs/Architecture.md`, `AGENTS.md`, sequential master plan under `docs/plans/` |
+| Architecture & agent rules | `docs/ARCHITECTURE.md`, `AGENTS.md`, sequential master plan under `docs/plans/` |
 | P0 Scaffold | NestJS + Vitest + ESLint + `@nestjs/config`, port 8080 |
 | P1 Database | TypeORM entities, migrations, dedicated `toca-postgres` |
 | P2–P4 Health / Docker | App health, Compose stack, DB readiness in `/health` |
@@ -28,7 +28,7 @@ The author-selected, verbatim prompt history for this submission is in:
 
 **[`docs/AI_PROMPT_HISTORY.md`](AI_PROMPT_HISTORY.md)**
 
-That file lists the verbatim user prompts included for Requirements.md disclosure. “Build” entries are Plan-mode accepts.
+That file lists the verbatim user prompts included for REQUIREMENTS.md disclosure. “Build” entries are Plan-mode accepts.
 
 ## Notes
 

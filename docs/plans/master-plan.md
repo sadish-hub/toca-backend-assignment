@@ -6,9 +6,9 @@ This is the **master plan** for implementing the Toca Boca Game Packs assignment
 |---|---|
 | [`master-plan.md`](master-plan.md) | Roadmap, ownership, commits, agent rules (this file) |
 | `p0-*.md` â€¦ `p7-*.md` | Detailed plan for one phase â€” create only when starting that phase |
-| [`Architecture.md`](../Architecture.md) | System design |
+| [`ARCHITECTURE.md`](../ARCHITECTURE.md) | System design |
 | [`AGENTS.md`](../../AGENTS.md) | Agent coding rules |
-| [`Requirements.md`](../Requirements.md) | Assignment requirements (source of truth for P7) |
+| [`REQUIREMENTS.md`](../REQUIREMENTS.md) | Assignment requirements (source of truth for P7) |
 
 ## Workflow
 
@@ -28,7 +28,7 @@ This is the **master plan** for implementing the Toca Boca Game Packs assignment
 | P4 Health + DB | done | [`p4-health-db.md`](p4-health-db.md) | `feat: include database readiness in health check` |
 | P5 Packs API | done | [`p5-packs-api.md`](p5-packs-api.md) | `feat: implement packs REST API with unit and e2e tests` |
 | P6 Makefile + README | done | [`p6-makefile-readme.md`](p6-makefile-readme.md) | `docs: add Makefile and README for setup and usage` |
-| P7 Requirements verify | done | [`p7-verify-requirements.md`](p7-verify-requirements.md) | `chore: verify Requirements.md coverage and close gaps` |
+| P7 Requirements verify | done | [`p7-verify-requirements.md`](p7-verify-requirements.md) | `chore: verify REQUIREMENTS.md coverage and close gaps` |
 
 ---
 
@@ -74,7 +74,7 @@ Each phase = **one focused git commit**. Do not touch files outside that phaseâ€
 
 ## P1 â€” Database layer (TypeORM + PostgreSQL schema)
 
-**Goal:** Entities + migrations matching `docs/Architecture.md` (`packs`, `pack_children`, `pack_contents`).
+**Goal:** Entities + migrations matching `docs/ARCHITECTURE.md` (`packs`, `pack_children`, `pack_contents`).
 
 **Owns:** `src/**/entities/`, TypeORM module/data-source, migrations folder, DB env keys via config (no Compose yet if possible â€” connection config ready for later).
 
@@ -154,7 +154,7 @@ Each phase = **one focused git commit**. Do not touch files outside that phaseâ€
 
 **Goal:** Supporting commands + reviewer docs (setup, usage, AI usage notes per assignment).
 
-**Owns:** `Makefile`, `README.md` (replace/extend assignment stub with setup/usage while keeping assignment context clear). Sync `docs/Architecture.md` only if structure drifted.
+**Owns:** `Makefile`, `README.md` (replace/extend assignment stub with setup/usage while keeping assignment context clear). Sync `docs/ARCHITECTURE.md` only if structure drifted.
 
 **Depends on:** P3â€“P5 (commands reflect real scripts).
 
@@ -164,9 +164,9 @@ Each phase = **one focused git commit**. Do not touch files outside that phaseâ€
 
 ---
 
-## P7 â€” Verify against Requirements.md (final)
+## P7 â€” Verify against REQUIREMENTS.md (final)
 
-**Goal:** Audit the finished work against `docs/Requirements.md` and close any gaps before submission.
+**Goal:** Audit the finished work against `docs/REQUIREMENTS.md` and close any gaps before submission.
 
 **Owns:** verification checklist artifact (e.g. `docs/REQUIREMENTS_CHECKLIST.md` or a checked section in README); only the minimal code/docs fixes needed for unmet requirements (may touch earlier areas â€” this is the only phase allowed to cross-cut for gap fixes).
 
@@ -174,7 +174,7 @@ Each phase = **one focused git commit**. Do not touch files outside that phaseâ€
 
 **Verification matrix (must all pass):**
 
-| Requirement area | Source in Requirements.md | How to verify |
+| Requirement area | Source in REQUIREMENTS.md | How to verify |
 |---|---|---|
 | TypeScript API | API / checklist | Project is TS; Nest builds |
 | `POST /packs` | API | Manual or e2e: pack persisted |
@@ -190,7 +190,7 @@ Each phase = **one focused git commit**. Do not touch files outside that phaseâ€
 
 **Done when:** Every row above is verified (run stack + tests); gaps fixed; checklist recorded so a reviewer/agent can see coverage.
 
-**Commit:** `chore: verify Requirements.md coverage and close gaps`
+**Commit:** `chore: verify REQUIREMENTS.md coverage and close gaps`
 
 ---
 
@@ -202,7 +202,7 @@ Each phase = **one focused git commit**. Do not touch files outside that phaseâ€
 4. One commit per phase; no bundling phases.
 5. Before coding a phase: write/agree a detailed plan in `docs/plans/` (e.g. `p0-scaffold.md`). Update this master plan status table after the phase commit.
 6. **After implementing a phase, always update that phaseâ€™s Done checklist** in its `docs/plans/p*.md` (mark every completed item `[x]`) **and** the master-plan status table. A phase is not finished until those docs reflect Done.
-7. P7 must use `docs/Requirements.md` as the source of truth â€” not memory.
+7. P7 must use `docs/REQUIREMENTS.md` as the source of truth â€” not memory.
 
 ## Agent notes
 

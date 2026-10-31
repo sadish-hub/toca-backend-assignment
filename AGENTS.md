@@ -1,6 +1,6 @@
 # AGENTS.md — Guidance for AI Coding Agents
 
-This file tells agents how to work in this repository. Read it before implementing, refactoring, or debugging. Architecture details live in [`docs/Architecture.md`](docs/Architecture.md); assignment requirements live in [`docs/Requirements.md`](docs/Requirements.md) and setup/usage in [`README.md`](README.md).
+This file tells agents how to work in this repository. Read it before implementing, refactoring, or debugging. Architecture details live in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md); assignment requirements live in [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md) and setup/usage in [`README.md`](README.md).
 
 ---
 
@@ -36,7 +36,7 @@ Do not invent endpoints, auth, caching, or remote services unless the human expl
 4. **When in doubt, ask.** Do not guess requirements, invent schema fields, or hallucinate library APIs. Ask clarifying question(s) before coding ambiguous behavior.
 5. **Follow NestJS / TypeScript best practices** (see [Coding patterns](#coding-patterns-and-guidelines)).
 6. **Code must be linted with ESLint.** Keep the project lint-clean; fix lint errors you introduce before considering work done.
-7. **Align with [`docs/Architecture.md`](docs/Architecture.md).** If you need to diverge, ask first and update `docs/Architecture.md` when the human agrees.
+7. **Align with [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).** If you need to diverge, ask first and update `docs/ARCHITECTURE.md` when the human agrees.
 8. **Health endpoint required.** Expose `GET /health` (liveness at minimum; readiness may include DB ping). Wire Compose/API healthchecks to it where useful.
 9. **Vitest coverage thresholds are mandatory.** Configure and enforce meaningful coverage floors (lines/branches/functions/statements). Do not lower thresholds to make a failing change “pass” without asking.
 10. **Definition of Done is mandatory.** A task is not complete until every item in [Definition of Done](#definition-of-done-for-agents) is satisfied.
@@ -64,7 +64,7 @@ Prefer testing observable behavior over implementation details. Mock at boundari
 - **Module boundaries:** Controllers → Services → TypeORM repositories/entities. Keep HTTP concerns out of services; keep SQL/ORM details out of controllers.
 - **DTOs + validation:** Use `class-validator` / `class-transformer` on request DTOs. Reject invalid payloads with `400`.
 - **Errors:** `404` for missing pack on content lookup; `400` for bad input / cycle introduction. Consistent error response shape.
-- **Entities:** Match the data model in `docs/Architecture.md` (`packs`, `pack_children`, `pack_contents`). String business IDs (e.g. `pack.school`).
+- **Entities:** Match the data model in `docs/ARCHITECTURE.md` (`packs`, `pack_children`, `pack_contents`). String business IDs (e.g. `pack.school`).
 - **Content resolution:** Traverse child packs (BFS/DFS), accumulate unique content, protect against cycles. Cover nested + cycle cases in tests.
 - **TypeScript:** Prefer explicit types at public APIs; avoid `any`. Use NestJS DI properly; no service locators.
 - **Config:** Environment via Compose/config module — no hard-coded secrets. Reviewer must run with `docker compose up` only.
@@ -147,7 +147,7 @@ When stuck after a few honest attempts, **stop and ask the human** with what you
 ## Documentation and AI usage (assignment)
 
 - Keep README setup/usage accurate when run instructions change.
-- Keep `docs/Architecture.md` aligned with real structure.
+- Keep `docs/ARCHITECTURE.md` aligned with real structure.
 - If AI tools are used for the submission, document tool, purpose, and prompt history as required by the assignment README.
 
 ---
@@ -160,7 +160,7 @@ Ask before assuming:
 - Whether `active: false` packs are excluded from content resolution
 - Idempotency of `POST /packs` (reject duplicate id vs upsert)
 - Migration strategy vs `synchronize` for the submitted Compose setup
-- Any behavior not specified in README / docs/Architecture
+- Any behavior not specified in README / docs/ARCHITECTURE
 
 ---
 
@@ -181,7 +181,7 @@ Still optional — ask the human before treating these as hard rules:
 
 A task is done only when **all** of the following are true:
 
-- [ ] Behavior matches README + docs/Architecture (or agreed deviation documented)
+- [ ] Behavior matches README + docs/ARCHITECTURE (or agreed deviation documented)
 - [ ] TDD evidence: tests added/updated first where practical
 - [ ] Unit **and** e2e coverage for the change
 - [ ] Vitest coverage thresholds met

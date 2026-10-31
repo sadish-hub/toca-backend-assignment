@@ -1,6 +1,6 @@
 # Game Packs API (Toca Boca assignment)
 
-Simplified TypeScript REST API for game packs stored in PostgreSQL. Assignment brief: [`docs/Requirements.md`](docs/Requirements.md). Design notes: [`docs/Architecture.md`](docs/Architecture.md).
+Simplified TypeScript REST API for game packs stored in PostgreSQL. Assignment brief: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md). Design notes: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Stack
 
@@ -36,7 +36,7 @@ make up
 # or: docker compose up --build -d --wait
 ```
 
-`make up` checks for a leftover one-off `toca-postgres` container, then builds, starts `api` + `db`, and blocks until the API healthcheck passes. (`docs/Requirements.md` writes `docker compose -up`; the correct Compose V2 command is `docker compose up`.)
+`make up` checks for a leftover one-off `toca-postgres` container, then builds, starts `api` + `db`, and blocks until the API healthcheck passes. (`docs/REQUIREMENTS.md` writes `docker compose -up`; the correct Compose V2 command is `docker compose up`.)
 
 API: [http://localhost:8080](http://localhost:8080) · Health: [http://localhost:8080/health](http://localhost:8080/health)
 
@@ -169,8 +169,8 @@ src/
   migrations/
 test/             # e2e specs
 docs/
-  Requirements.md # assignment brief
-  Architecture.md # system design
+  REQUIREMENTS.md # assignment brief
+  ARCHITECTURE.md # system design
   AI_USAGE.md     # AI tools + purpose
   AI_PROMPT_HISTORY.md  # complete submission prompt history
   plans/          # phased implementation plans
@@ -193,7 +193,7 @@ Development used **Cursor** (Composer / coding agents) and **Context7** (current
 
 ## Assignment checklist
 
-Mirror of the boxes in [`docs/Requirements.md`](docs/Requirements.md). Verified in **P7** — see [`docs/REQUIREMENTS_CHECKLIST.md`](docs/REQUIREMENTS_CHECKLIST.md).
+Mirror of the boxes in [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md). Verified in **P7** — see [`docs/REQUIREMENTS_CHECKLIST.md`](docs/REQUIREMENTS_CHECKLIST.md).
 
 - [x] Is written in TypeScript.
 - [x] Includes all expected endpoints.

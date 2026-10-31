@@ -1,6 +1,6 @@
 # P6 — Makefile + README
 
-Source of truth: [`master-plan.md`](master-plan.md) + [`Requirements.md`](../Requirements.md) Documentation/AI sections. One commit. Do not run the full P7 requirements audit (that is the next phase).
+Source of truth: [`master-plan.md`](master-plan.md) + [`REQUIREMENTS.md`](../REQUIREMENTS.md) Documentation/AI sections. One commit. Do not run the full P7 requirements audit (that is the next phase).
 
 | Field | Value |
 |---|---|
@@ -25,9 +25,9 @@ Reviewers can discover how to **install/run/test** and **query the API** from th
 | Package manager in docs | **pnpm** (repo `packageManager`) |
 | Primary run path | `docker compose up --build` (correct Compose V2 syntax; note Requirements typo `-up`) |
 | Makefile | Thin wrappers around `pnpm` + `docker compose` |
-| README | **Replace** Nest starter boilerplate with Toca Game Packs API docs; keep a short link to [`Requirements.md`](../Requirements.md) as the assignment brief |
+| README | **Replace** Nest starter boilerplate with Toca Game Packs API docs; keep a short link to [`REQUIREMENTS.md`](../REQUIREMENTS.md) as the assignment brief |
 | AI disclosure | Section in README + fuller history in [`docs/AI_USAGE.md`](../AI_USAGE.md) (tools, purpose per phase, chronological prompt summary from this project’s phases — complete enough for reviewers; not a raw dump of every tool JSON) |
-| Architecture | Sync [`Architecture.md`](../Architecture.md) only if something drifted (e.g. packs BFS note already accurate) |
+| Architecture | Sync [`ARCHITECTURE.md`](../ARCHITECTURE.md) only if something drifted (e.g. packs BFS note already accurate) |
 
 ## Makefile targets (locked)
 

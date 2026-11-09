@@ -3,7 +3,24 @@ import {
   buildContentByPack,
   collectUniqueContentIds,
   wouldIntroduceCycle,
+  wouldIntroduceCycleHopScoped,
 } from './pack-graph.js';
+
+type Edge = { parentPackId: string; childPackId: string };
+
+function hopScopedEdgeLoader(allEdges: Edge[]) {
+  const loadCalls: string[][] = [];
+  const loadOutgoingEdges = (
+    parentIds: readonly string[],
+  ): Promise<Edge[]> => {
+    loadCalls.push([...parentIds]);
+    const idSet = new Set(parentIds);
+    return Promise.resolve(
+      allEdges.filter((e) => idSet.has(e.parentPackId)),
+    );
+  };
+  return { loadOutgoingEdges, loadCalls };
+}
 
 describe('pack-graph', () => {
   describe('collectUniqueContentIds (BFS)', () => {
@@ -299,6 +316,51 @@ describe('pack-graph', () => {
         { parentPackId: 'b', childPackId: 'c' },
       ]);
       expect(wouldIntroduceCycle('c', ['a'], childrenByParent)).toBe(true);
+    });
+  });
+
+  describe('wouldIntroduceCycleHopScoped', () => {
+    it('detects self-reference without loading edges', async () => {
+      const { loadOutgoingEdges, loadCalls } = hopScopedEdgeLoader([]);
+      await expect(
+        wouldIntroduceCycleHopScoped('pack.a', ['pack.a'], loadOutgoingEdges),
+      ).resolves.toBe(true);
+      expect(loadCalls).toEqual([]);
+    });
+
+    it('allows linking when descendants never reach the new parent', async () => {
+      const { loadOutgoingEdges, loadCalls } = hopScopedEdgeLoader([
+        { parentPackId: 'leaf', childPackId: 'deeper' },
+        { parentPackId: 'unrelated', childPackId: 'other' },
+      ]);
+      await expect(
+        wouldIntroduceCycleHopScoped('pack.new', ['leaf'], loadOutgoingEdges),
+      ).resolves.toBe(false);
+      // Never loads the unrelated branch.
+      expect(loadCalls.flat()).not.toContain('unrelated');
+    });
+
+    it('detects a cycle when a child can already reach the parent', async () => {
+      // Existing: a → b. Adding b → a would cycle.
+      const { loadOutgoingEdges } = hopScopedEdgeLoader([
+        { parentPackId: 'a', childPackId: 'b' },
+      ]);
+      await expect(
+        wouldIntroduceCycleHopScoped('b', ['a'], loadOutgoingEdges),
+      ).resolves.toBe(true);
+    });
+
+    it('detects a longer cycle with hop-scoped loads only', async () => {
+      // Existing: a → b → c. Adding c → a cycles. Unrelated edges must not load.
+      const { loadOutgoingEdges, loadCalls } = hopScopedEdgeLoader([
+        { parentPackId: 'a', childPackId: 'b' },
+        { parentPackId: 'b', childPackId: 'c' },
+        { parentPackId: 'x', childPackId: 'y' },
+      ]);
+      await expect(
+        wouldIntroduceCycleHopScoped('c', ['a'], loadOutgoingEdges),
+      ).resolves.toBe(true);
+      expect(loadCalls.flat()).not.toContain('x');
     });
   });
 });

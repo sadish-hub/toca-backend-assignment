@@ -78,7 +78,7 @@ Design choices:
 - **`packs.id`**: string business IDs (e.g. `pack.school`) as in the assignment sample.
 - **`pack_children`**: self-referential many-to-many (a pack may appear under multiple parents if needed; enforces uniqueness of `(parent, child)`).
 - **`pack_contents`**: one row per content item on a pack (avoids JSON-array ambiguity; easy unique constraint per pack).
-- Reject cycles on `POST` (child graph must remain a DAG), and still guard recursion at read time.
+- Reject cycles on `POST` via **hop-scoped** reachability from proposed children (no full `pack_children` scan); child graph must remain a DAG. Still guard recursion at read time with a visited set.
 
 ## API surface
 
@@ -99,13 +99,16 @@ sequenceDiagram
 
   C->>Ctrl: GET /packs/:id/content
   Ctrl->>Svc: getPackContent(id)
-  Svc->>DB: load pack + children + contents
-  Note over Svc: BFS/DFS over childPackIds<br/>track visited to avoid cycles<br/>accumulate unique content IDs
+  Svc->>DB: load root pack by id
+  loop BFS hops
+    Svc->>DB: content + child edges WHERE pack/parent IN (frontier)
+  end
+  Note over Svc: hop-scoped BFS<br/>visited set (cycles)<br/>unique content IDs
   Svc-->>Ctrl: string[]
   Ctrl-->>C: 200 JSON array
 ```
 
-Implementation note: prefer **in-app traversal** with TypeORM (clear, testable, easy cycle handling). A Postgres recursive CTE is a valid alternative if you want a single-query talking point in the interview.
+Implementation note: **hop-scoped in-app BFS** with TypeORM `In(...)` per frontier batch (does not load unrelated packs). Pure graph helpers remain unit-tested in memory. A Postgres recursive CTE is a valid alternative for a single-query talking point.
 
 ## Suggested project shape
 

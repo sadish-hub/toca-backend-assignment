@@ -20,9 +20,9 @@ Implement the three required pack endpoints with validation, production-ready er
 | Duplicate pack `id` | **409 Conflict** (no upsert). |
 | Missing child references | If `childPackIds` lists ids that are **not** in DB yet → **400** (FK on [`pack-child.entity.ts`](../../src/packs/entities/pack-child.entity.ts) requires the child row). Document create-order: create child packs before parents that reference them. Omitting children never errors. |
 | `active: false` | Requirements do **not** say to skip inactive packs → **include** inactive packs in traversal and content. `active` is returned on pack resources only. |
-| Cycles | On `POST`, reject graphs that introduce a cycle (**400**). On `GET .../content`, still use a visited-set so cycles cannot hang. |
+| Cycles | On `POST`, reject graphs that introduce a cycle (**400**) via hop-scoped reachability (`In` on frontier parents — no full `pack_children` scan). On `GET .../content`, still use a visited-set so cycles cannot hang. |
 | Self-child | Reject `childPackIds` containing the pack’s own `id` (**400**). |
-| Content resolution | **Locked: in-app BFS** with a `visited` set (not recursive SQL/CTE). Aligns with Architecture and unit-testability. |
+| Content resolution | **Locked: hop-scoped in-app BFS** with a `visited` set (batch `In(...)` per frontier; not full-table load; not recursive SQL/CTE). Aligns with Architecture and unit-testability. |
 
 Clarification: “childPack not mandatory / don’t throw” = **empty/omitted children are fine**. Throwing only for **duplicate id (409)** or **invalid/cyclic child references (400)** — not for “you forgot children.”
 

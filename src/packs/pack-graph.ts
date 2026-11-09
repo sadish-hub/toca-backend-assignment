@@ -1,6 +1,7 @@
 /**
  * In-app graph helpers for pack trees (BFS + cycle checks).
- * No recursive SQL — assignment-locked approach for testability.
+ * Service getContent walks hop-scoped via TypeORM In(...); these helpers
+ * stay pure for unit tests. No recursive SQL.
  */
 
 export function buildChildrenByParent(
@@ -95,6 +96,58 @@ export function wouldIntroduceCycle(
         if (!visited.has(next)) {
           queue.push(next);
         }
+      }
+    }
+  }
+
+  return false;
+}
+
+export type PackChildEdge = {
+  parentPackId: string;
+  childPackId: string;
+};
+
+/**
+ * Hop-scoped cycle check: walk from proposed children toward descendants,
+ * loading only outgoing edges for the current frontier (no full-table scan).
+ */
+export async function wouldIntroduceCycleHopScoped(
+  parentId: string,
+  childIds: readonly string[],
+  loadOutgoingEdges: (
+    parentIds: readonly string[],
+  ) => Promise<ReadonlyArray<PackChildEdge>>,
+): Promise<boolean> {
+  if (childIds.includes(parentId)) {
+    return true;
+  }
+
+  const visited = new Set<string>();
+  let frontier: string[] = [...childIds];
+
+  while (frontier.length > 0) {
+    const batch = [
+      ...new Set(frontier.filter((packId) => !visited.has(packId))),
+    ];
+    frontier = [];
+    if (batch.length === 0) {
+      continue;
+    }
+    if (batch.includes(parentId)) {
+      return true;
+    }
+    for (const packId of batch) {
+      visited.add(packId);
+    }
+
+    const edges = await loadOutgoingEdges(batch);
+    for (const edge of edges) {
+      if (edge.childPackId === parentId) {
+        return true;
+      }
+      if (!visited.has(edge.childPackId)) {
+        frontier.push(edge.childPackId);
       }
     }
   }

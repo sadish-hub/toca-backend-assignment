@@ -3,11 +3,39 @@ import {
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
-import { DataSource, QueryFailedError, Repository } from 'typeorm';
+import { DataSource, FindOperator, QueryFailedError, Repository } from 'typeorm';
 import { PackChild } from './entities/pack-child.entity.js';
 import { PackContent } from './entities/pack-content.entity.js';
 import { Pack } from './entities/pack.entity.js';
 import { PacksService } from './packs.service.js';
+
+function inValues(operator: unknown): string[] {
+  if (!(operator instanceof FindOperator) || operator.type !== 'in') {
+    throw new Error('expected TypeORM In(...) FindOperator');
+  }
+  return operator.value as string[];
+}
+
+/** Scope mocks so getContent only receives rows for the hop’s pack ids. */
+function mockHopScopedGraph(
+  packChildrenRepository: { find: ReturnType<typeof vi.fn> },
+  packContentsRepository: { find: ReturnType<typeof vi.fn> },
+  edges: Array<{ parentPackId: string; childPackId: string }>,
+  contents: Array<{ packId: string; contentId: string }>,
+): void {
+  packChildrenRepository.find.mockImplementation(
+    (options?: { where?: { parentPackId?: unknown } }) => {
+      const ids = new Set(inValues(options?.where?.parentPackId));
+      return edges.filter((e) => ids.has(e.parentPackId));
+    },
+  );
+  packContentsRepository.find.mockImplementation(
+    (options?: { where?: { packId?: unknown } }) => {
+      const ids = new Set(inValues(options?.where?.packId));
+      return contents.filter((c) => ids.has(c.packId));
+    },
+  );
+}
 
 describe('PacksService', () => {
   let service: PacksService;
@@ -180,9 +208,15 @@ describe('PacksService', () => {
       manager.findOne.mockResolvedValue(null);
       manager.findBy.mockResolvedValue([{ id: 'pack.a' }]);
       // Existing edge: a → b. Creating b with child a cycles.
-      manager.find.mockResolvedValue([
-        { parentPackId: 'pack.a', childPackId: 'pack.b' },
-      ]);
+      manager.find.mockImplementation(
+        (_entity: unknown, options?: { where?: { parentPackId?: unknown } }) => {
+          const ids = new Set(inValues(options?.where?.parentPackId));
+          return [
+            { parentPackId: 'pack.a', childPackId: 'pack.b' },
+            { parentPackId: 'pack.unrelated', childPackId: 'pack.noise' },
+          ].filter((e) => ids.has(e.parentPackId));
+        },
+      );
 
       await expect(
         service.create({
@@ -193,6 +227,56 @@ describe('PacksService', () => {
           childPackIds: ['pack.a'],
         }),
       ).rejects.toBeInstanceOf(BadRequestException);
+
+      for (const call of manager.find.mock.calls) {
+        expect(call[1]).toEqual(
+          expect.objectContaining({
+            where: expect.objectContaining({
+              parentPackId: expect.any(FindOperator),
+            }),
+          }),
+        );
+        expect(inValues(call[1].where.parentPackId)).not.toContain(
+          'pack.unrelated',
+        );
+      }
+    });
+
+    it('does not full-scan pack_children when create introduces no cycle', async () => {
+      manager.findOne.mockResolvedValue(null);
+      manager.findBy.mockResolvedValue([{ id: 'pack.leaf' }]);
+      manager.find.mockImplementation(
+        (_entity: unknown, options?: { where?: { parentPackId?: unknown } }) => {
+          const ids = new Set(inValues(options?.where?.parentPackId));
+          return [
+            { parentPackId: 'pack.leaf', childPackId: 'pack.deeper' },
+            { parentPackId: 'pack.other', childPackId: 'pack.noise' },
+          ].filter((e) => ids.has(e.parentPackId));
+        },
+      );
+
+      await service.create({
+        id: 'pack.parent',
+        packName: 'Parent',
+        active: true,
+        price: 1,
+        childPackIds: ['pack.leaf'],
+      });
+
+      expect(manager.find).toHaveBeenCalled();
+      for (const call of manager.find.mock.calls) {
+        expect(call[0]).toBe(PackChild);
+        expect(call[1]).toEqual(
+          expect.objectContaining({
+            where: expect.objectContaining({
+              parentPackId: expect.any(FindOperator),
+            }),
+          }),
+        );
+        expect(inValues(call[1].where.parentPackId)).not.toContain(
+          'pack.other',
+        );
+      }
     });
   });
 
@@ -229,6 +313,55 @@ describe('PacksService', () => {
       await expect(service.getContent('pack.missing')).rejects.toBeInstanceOf(
         NotFoundException,
       );
+      expect(packChildrenRepository.find).not.toHaveBeenCalled();
+      expect(packContentsRepository.find).not.toHaveBeenCalled();
+    });
+
+    it('queries only hop-scoped pack ids (never full-table find)', async () => {
+      packsRepository.findOne.mockResolvedValue({
+        id: 'pack.parent',
+        active: true,
+      });
+      mockHopScopedGraph(
+        packChildrenRepository,
+        packContentsRepository,
+        [
+          { parentPackId: 'pack.parent', childPackId: 'pack.child' },
+          // Unrelated edge — must never be requested if we scope by parent id.
+          { parentPackId: 'pack.other', childPackId: 'pack.unrelated' },
+        ],
+        [
+          { packId: 'pack.parent', contentId: 'c.parent' },
+          { packId: 'pack.child', contentId: 'c.child' },
+          { packId: 'pack.other', contentId: 'c.other' },
+          { packId: 'pack.unrelated', contentId: 'c.unrelated' },
+        ],
+      );
+
+      const result = await service.getContent('pack.parent');
+      expect(result.sort()).toEqual(['c.child', 'c.parent']);
+
+      for (const call of packContentsRepository.find.mock.calls) {
+        expect(call[0]).toEqual(
+          expect.objectContaining({
+            where: expect.objectContaining({ packId: expect.any(FindOperator) }),
+          }),
+        );
+        const ids = inValues(call[0].where.packId);
+        expect(ids).not.toContain('pack.other');
+        expect(ids).not.toContain('pack.unrelated');
+      }
+      for (const call of packChildrenRepository.find.mock.calls) {
+        expect(call[0]).toEqual(
+          expect.objectContaining({
+            where: expect.objectContaining({
+              parentPackId: expect.any(FindOperator),
+            }),
+          }),
+        );
+        const ids = inValues(call[0].where.parentPackId);
+        expect(ids).not.toContain('pack.other');
+      }
     });
 
     it('returns unique nested content via in-app BFS including inactive packs', async () => {
@@ -236,14 +369,16 @@ describe('PacksService', () => {
         id: 'pack.parent',
         active: true,
       });
-      packChildrenRepository.find.mockResolvedValue([
-        { parentPackId: 'pack.parent', childPackId: 'pack.inactive' },
-      ]);
-      packContentsRepository.find.mockResolvedValue([
-        { packId: 'pack.parent', contentId: 'c.parent' },
-        { packId: 'pack.inactive', contentId: 'c.child' },
-        { packId: 'pack.inactive', contentId: 'c.parent' },
-      ]);
+      mockHopScopedGraph(
+        packChildrenRepository,
+        packContentsRepository,
+        [{ parentPackId: 'pack.parent', childPackId: 'pack.inactive' }],
+        [
+          { packId: 'pack.parent', contentId: 'c.parent' },
+          { packId: 'pack.inactive', contentId: 'c.child' },
+          { packId: 'pack.inactive', contentId: 'c.parent' },
+        ],
+      );
 
       await expect(service.getContent('pack.parent')).resolves.toEqual(
         expect.arrayContaining(['c.parent', 'c.child']),
@@ -253,19 +388,23 @@ describe('PacksService', () => {
 
     it('aggregates unique content across a 5-level deep chain', async () => {
       packsRepository.findOne.mockResolvedValue({ id: 'pack.a', active: true });
-      packChildrenRepository.find.mockResolvedValue([
-        { parentPackId: 'pack.a', childPackId: 'pack.b' },
-        { parentPackId: 'pack.b', childPackId: 'pack.c' },
-        { parentPackId: 'pack.c', childPackId: 'pack.d' },
-        { parentPackId: 'pack.d', childPackId: 'pack.e' },
-      ]);
-      packContentsRepository.find.mockResolvedValue([
-        { packId: 'pack.a', contentId: 'c.a' },
-        { packId: 'pack.b', contentId: 'c.b' },
-        { packId: 'pack.c', contentId: 'c.c' },
-        { packId: 'pack.d', contentId: 'c.d' },
-        { packId: 'pack.e', contentId: 'c.e' },
-      ]);
+      mockHopScopedGraph(
+        packChildrenRepository,
+        packContentsRepository,
+        [
+          { parentPackId: 'pack.a', childPackId: 'pack.b' },
+          { parentPackId: 'pack.b', childPackId: 'pack.c' },
+          { parentPackId: 'pack.c', childPackId: 'pack.d' },
+          { parentPackId: 'pack.d', childPackId: 'pack.e' },
+        ],
+        [
+          { packId: 'pack.a', contentId: 'c.a' },
+          { packId: 'pack.b', contentId: 'c.b' },
+          { packId: 'pack.c', contentId: 'c.c' },
+          { packId: 'pack.d', contentId: 'c.d' },
+          { packId: 'pack.e', contentId: 'c.e' },
+        ],
+      );
 
       await expect(service.getContent('pack.a')).resolves.toEqual(
         expect.arrayContaining(['c.a', 'c.b', 'c.c', 'c.d', 'c.e']),
@@ -275,20 +414,24 @@ describe('PacksService', () => {
 
     it('dedupes content shared between level 1 and level 5 of a deep chain', async () => {
       packsRepository.findOne.mockResolvedValue({ id: 'pack.a', active: true });
-      packChildrenRepository.find.mockResolvedValue([
-        { parentPackId: 'pack.a', childPackId: 'pack.b' },
-        { parentPackId: 'pack.b', childPackId: 'pack.c' },
-        { parentPackId: 'pack.c', childPackId: 'pack.d' },
-        { parentPackId: 'pack.d', childPackId: 'pack.e' },
-      ]);
-      packContentsRepository.find.mockResolvedValue([
-        { packId: 'pack.a', contentId: 'c.shared' },
-        { packId: 'pack.b', contentId: 'c.b' },
-        { packId: 'pack.c', contentId: 'c.c' },
-        { packId: 'pack.d', contentId: 'c.d' },
-        { packId: 'pack.e', contentId: 'c.shared' },
-        { packId: 'pack.e', contentId: 'c.e-only' },
-      ]);
+      mockHopScopedGraph(
+        packChildrenRepository,
+        packContentsRepository,
+        [
+          { parentPackId: 'pack.a', childPackId: 'pack.b' },
+          { parentPackId: 'pack.b', childPackId: 'pack.c' },
+          { parentPackId: 'pack.c', childPackId: 'pack.d' },
+          { parentPackId: 'pack.d', childPackId: 'pack.e' },
+        ],
+        [
+          { packId: 'pack.a', contentId: 'c.shared' },
+          { packId: 'pack.b', contentId: 'c.b' },
+          { packId: 'pack.c', contentId: 'c.c' },
+          { packId: 'pack.d', contentId: 'c.d' },
+          { packId: 'pack.e', contentId: 'c.shared' },
+          { packId: 'pack.e', contentId: 'c.e-only' },
+        ],
+      );
 
       const result = await service.getContent('pack.a');
       expect(result.sort()).toEqual([
@@ -302,24 +445,28 @@ describe('PacksService', () => {
 
     it('resolves a wide root with a deep mid-branch uniquely', async () => {
       packsRepository.findOne.mockResolvedValue({ id: 'root', active: true });
-      packChildrenRepository.find.mockResolvedValue([
-        { parentPackId: 'root', childPackId: 'left' },
-        { parentPackId: 'root', childPackId: 'mid' },
-        { parentPackId: 'root', childPackId: 'right' },
-        { parentPackId: 'mid', childPackId: 'mid.g1' },
-        { parentPackId: 'mid', childPackId: 'mid.g2' },
-        { parentPackId: 'mid.g1', childPackId: 'mid.gg' },
-      ]);
-      packContentsRepository.find.mockResolvedValue([
-        { packId: 'root', contentId: 'c.root' },
-        { packId: 'left', contentId: 'c.left' },
-        { packId: 'mid', contentId: 'c.mid' },
-        { packId: 'right', contentId: 'c.right' },
-        { packId: 'mid.g1', contentId: 'c.mid-g1' },
-        { packId: 'mid.g2', contentId: 'c.overlap' },
-        { packId: 'mid.gg', contentId: 'c.overlap' },
-        { packId: 'mid.gg', contentId: 'c.deep' },
-      ]);
+      mockHopScopedGraph(
+        packChildrenRepository,
+        packContentsRepository,
+        [
+          { parentPackId: 'root', childPackId: 'left' },
+          { parentPackId: 'root', childPackId: 'mid' },
+          { parentPackId: 'root', childPackId: 'right' },
+          { parentPackId: 'mid', childPackId: 'mid.g1' },
+          { parentPackId: 'mid', childPackId: 'mid.g2' },
+          { parentPackId: 'mid.g1', childPackId: 'mid.gg' },
+        ],
+        [
+          { packId: 'root', contentId: 'c.root' },
+          { packId: 'left', contentId: 'c.left' },
+          { packId: 'mid', contentId: 'c.mid' },
+          { packId: 'right', contentId: 'c.right' },
+          { packId: 'mid.g1', contentId: 'c.mid-g1' },
+          { packId: 'mid.g2', contentId: 'c.overlap' },
+          { packId: 'mid.gg', contentId: 'c.overlap' },
+          { packId: 'mid.gg', contentId: 'c.deep' },
+        ],
+      );
 
       const result = await service.getContent('root');
       expect(result.sort()).toEqual([
@@ -335,44 +482,52 @@ describe('PacksService', () => {
 
     it('finds leaf content through empty intermediate packs', async () => {
       packsRepository.findOne.mockResolvedValue({ id: 'root', active: true });
-      packChildrenRepository.find.mockResolvedValue([
-        { parentPackId: 'root', childPackId: 'empty.1' },
-        { parentPackId: 'empty.1', childPackId: 'empty.2' },
-        { parentPackId: 'empty.2', childPackId: 'leaf' },
-      ]);
-      packContentsRepository.find.mockResolvedValue([
-        { packId: 'leaf', contentId: 'c.leaf' },
-      ]);
+      mockHopScopedGraph(
+        packChildrenRepository,
+        packContentsRepository,
+        [
+          { parentPackId: 'root', childPackId: 'empty.1' },
+          { parentPackId: 'empty.1', childPackId: 'empty.2' },
+          { parentPackId: 'empty.2', childPackId: 'leaf' },
+        ],
+        [{ packId: 'leaf', contentId: 'c.leaf' }],
+      );
 
       await expect(service.getContent('root')).resolves.toEqual(['c.leaf']);
     });
 
     it('returns only root content when descendants have none', async () => {
       packsRepository.findOne.mockResolvedValue({ id: 'root', active: true });
-      packChildrenRepository.find.mockResolvedValue([
-        { parentPackId: 'root', childPackId: 'child' },
-        { parentPackId: 'child', childPackId: 'grandchild' },
-      ]);
-      packContentsRepository.find.mockResolvedValue([
-        { packId: 'root', contentId: 'c.root' },
-      ]);
+      mockHopScopedGraph(
+        packChildrenRepository,
+        packContentsRepository,
+        [
+          { parentPackId: 'root', childPackId: 'child' },
+          { parentPackId: 'child', childPackId: 'grandchild' },
+        ],
+        [{ packId: 'root', contentId: 'c.root' }],
+      );
 
       await expect(service.getContent('root')).resolves.toEqual(['c.root']);
     });
 
     it('dedupes identical content ids across many siblings', async () => {
       packsRepository.findOne.mockResolvedValue({ id: 'root', active: true });
-      packChildrenRepository.find.mockResolvedValue([
-        { parentPackId: 'root', childPackId: 'sib.1' },
-        { parentPackId: 'root', childPackId: 'sib.2' },
-        { parentPackId: 'root', childPackId: 'sib.3' },
-      ]);
-      packContentsRepository.find.mockResolvedValue([
-        { packId: 'sib.1', contentId: 'c.same' },
-        { packId: 'sib.2', contentId: 'c.same' },
-        { packId: 'sib.3', contentId: 'c.same' },
-        { packId: 'sib.3', contentId: 'c.extra' },
-      ]);
+      mockHopScopedGraph(
+        packChildrenRepository,
+        packContentsRepository,
+        [
+          { parentPackId: 'root', childPackId: 'sib.1' },
+          { parentPackId: 'root', childPackId: 'sib.2' },
+          { parentPackId: 'root', childPackId: 'sib.3' },
+        ],
+        [
+          { packId: 'sib.1', contentId: 'c.same' },
+          { packId: 'sib.2', contentId: 'c.same' },
+          { packId: 'sib.3', contentId: 'c.same' },
+          { packId: 'sib.3', contentId: 'c.extra' },
+        ],
+      );
 
       const result = await service.getContent('root');
       expect(result.sort()).toEqual(['c.extra', 'c.same']);

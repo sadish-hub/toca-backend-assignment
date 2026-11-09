@@ -10,12 +10,7 @@ import { CreatePackDto } from './dto/create-pack.dto.js';
 import { PackChild } from './entities/pack-child.entity.js';
 import { PackContent } from './entities/pack-content.entity.js';
 import { Pack } from './entities/pack.entity.js';
-import {
-  buildChildrenByParent,
-  buildContentByPack,
-  collectUniqueContentIds,
-  wouldIntroduceCycle,
-} from './pack-graph.js';
+import { wouldIntroduceCycleHopScoped } from './pack-graph.js';
 import type { PackResponse } from './pack-response.js';
 
 /** PostgreSQL unique_violation — concurrent duplicate POST /packs race. */
@@ -60,9 +55,15 @@ export class PacksService {
             );
           }
 
-          const edges = await manager.find(PackChild);
-          const childrenByParent = buildChildrenByParent(edges);
-          if (wouldIntroduceCycle(dto.id, childPackIds, childrenByParent)) {
+          const introducesCycle = await wouldIntroduceCycleHopScoped(
+            dto.id,
+            childPackIds,
+            (parentIds) =>
+              manager.find(PackChild, {
+                where: { parentPackId: In([...parentIds]) },
+              }),
+          );
+          if (introducesCycle) {
             throw new BadRequestException(
               'childPackIds would introduce a cycle in the pack graph',
             );
@@ -129,16 +130,42 @@ export class PacksService {
       throw new NotFoundException(`Pack with id "${id}" not found`);
     }
 
-    const [edges, contentRows] = await Promise.all([
-      this.packChildrenRepository.find(),
-      this.packContentsRepository.find(),
-    ]);
+    const visited = new Set<string>();
+    const unique = new Set<string>();
+    let frontier: string[] = [id];
 
-    return collectUniqueContentIds(
-      id,
-      buildChildrenByParent(edges),
-      buildContentByPack(contentRows),
-    );
+    while (frontier.length > 0) {
+      const batch = [
+        ...new Set(frontier.filter((packId) => !visited.has(packId))),
+      ];
+      frontier = [];
+      if (batch.length === 0) {
+        continue;
+      }
+      for (const packId of batch) {
+        visited.add(packId);
+      }
+
+      const [contentRows, edges] = await Promise.all([
+        this.packContentsRepository.find({
+          where: { packId: In(batch) },
+        }),
+        this.packChildrenRepository.find({
+          where: { parentPackId: In(batch) },
+        }),
+      ]);
+
+      for (const row of contentRows) {
+        unique.add(row.contentId);
+      }
+      for (const edge of edges) {
+        if (!visited.has(edge.childPackId)) {
+          frontier.push(edge.childPackId);
+        }
+      }
+    }
+
+    return [...unique];
   }
 }
 

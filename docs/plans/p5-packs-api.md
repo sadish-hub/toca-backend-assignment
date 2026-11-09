@@ -20,8 +20,7 @@ Implement the three required pack endpoints with validation, production-ready er
 | Duplicate pack `id` | **409 Conflict** (no upsert). |
 | Missing child references | If `childPackIds` lists ids that are **not** in DB yet → **400** (FK on [`pack-child.entity.ts`](../../src/packs/entities/pack-child.entity.ts) requires the child row). Document create-order: create child packs before parents that reference them. Omitting children never errors. |
 | `active: false` | Requirements do **not** say to skip inactive packs → **include** inactive packs in traversal and content. `active` is returned on pack resources only. |
-| Cycles | On `POST`, reject graphs that introduce a cycle (**400**) via hop-scoped reachability (`In` on frontier parents — no full `pack_children` scan). On `GET .../content`, still use a visited-set so cycles cannot hang. |
-| Self-child | Reject `childPackIds` containing the pack’s own `id` (**400**). |
+| Cycles / self-child | On `POST`, reject self-referencing `childPackIds` (**400**). Create-only API cannot close multi-hop cycles (would require updating an existing pack). On `GET .../content`, use a visited-set so cycles cannot hang. |
 | Content resolution | **Locked: hop-scoped in-app BFS** with a `visited` set (batch `In(...)` per frontier; not full-table load; not recursive SQL/CTE). Aligns with Architecture and unit-testability. |
 
 Clarification: “childPack not mandatory / don’t throw” = **empty/omitted children are fine**. Throwing only for **duplicate id (409)** or **invalid/cyclic child references (400)** — not for “you forgot children.”
@@ -83,7 +82,7 @@ sequenceDiagram
 2. **Unit tests first** for pure aggregation helper / service BFS: nested unique content, diamond graph (shared child), cycle protection via visited, inactive pack still included, missing root → 404. Do not implement recursive SQL.
 3. **Create DTO + failing controller/service tests** for POST validation, 409 duplicate, 400 cycle / self-ref / unknown child id, happy path.
 4. Implement `PacksService`:
-   - `create`: transaction; reject duplicate; validate children exist; cycle check on prospective edges; insert pack + contents + child links.
+   - `create`: transaction; reject duplicate; reject self-child; validate children exist; insert pack + contents + child links.
    - `findAll`: map entities to API shape.
    - `getContent`: traverse with visited set; unique content ids; 404 if missing.
 5. Wire controller routes; ensure global `ValidationPipe` already in [`main.ts`](../../src/main.ts) covers DTOs.

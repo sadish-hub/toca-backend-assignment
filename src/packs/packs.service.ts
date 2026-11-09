@@ -10,7 +10,6 @@ import { CreatePackDto } from './dto/create-pack.dto.js';
 import { PackChild } from './entities/pack-child.entity.js';
 import { PackContent } from './entities/pack-content.entity.js';
 import { Pack } from './entities/pack.entity.js';
-import { wouldIntroduceCycleHopScoped } from './pack-graph.js';
 import type { PackResponse } from './pack-response.js';
 
 /** PostgreSQL unique_violation — concurrent duplicate POST /packs race. */
@@ -52,20 +51,6 @@ export class PacksService {
           if (foundChildren.length !== childPackIds.length) {
             throw new BadRequestException(
               'One or more childPackIds do not exist; create child packs before referencing them',
-            );
-          }
-
-          const introducesCycle = await wouldIntroduceCycleHopScoped(
-            dto.id,
-            childPackIds,
-            (parentIds) =>
-              manager.find(PackChild, {
-                where: { parentPackId: In([...parentIds]) },
-              }),
-          );
-          if (introducesCycle) {
-            throw new BadRequestException(
-              'childPackIds would introduce a cycle in the pack graph',
             );
           }
         }

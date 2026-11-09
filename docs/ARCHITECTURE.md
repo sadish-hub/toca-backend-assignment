@@ -78,7 +78,7 @@ Design choices:
 - **`packs.id`**: string business IDs (e.g. `pack.school`) as in the assignment sample.
 - **`pack_children`**: self-referential many-to-many (a pack may appear under multiple parents if needed; enforces uniqueness of `(parent, child)`).
 - **`pack_contents`**: one row per content item on a pack (avoids JSON-array ambiguity; easy unique constraint per pack).
-- Reject cycles on `POST` via **hop-scoped** reachability from proposed children (no full `pack_children` scan); child graph must remain a DAG. Still guard recursion at read time with a visited set.
+- On `POST`, reject **self-referencing** `childPackIds` (**400**). Multi-hop cycle closure is not reachable with create-only (no PATCH); read path still uses a visited set so a corrupt cycle cannot hang.
 
 ## API surface
 
@@ -131,7 +131,7 @@ Dockerfile
 ## Cross-cutting (assignment-scoped)
 
 - **Validation**: DTOs on create (required fields, non-empty id/name, child IDs exist or document create-order policy).
-- **Errors**: 404 for missing pack on content endpoint; 400 for invalid payloads / cycle introduction.
+- **Errors**: 404 for missing pack on content endpoint; 400 for invalid payloads / self-child.
 - **Tests**: unit tests for content aggregation (nested + cycle); e2e against API (Jest, matching Toca stack).
 - **Docker**: API image builds TypeScript; Compose wires `api` → `db` with healthcheck.
 

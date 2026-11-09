@@ -163,7 +163,7 @@ Default local DB env (overridable): `DATABASE_HOST=localhost`, `DATABASE_PORT=54
 
 ```text
 src/
-  packs/          # POST/GET packs, nested content (BFS + cycle checks)
+  packs/          # POST/GET packs, nested content (hop-scoped BFS)
   health/         # GET /health (app + DB readiness)
   database/       # TypeORM config + data source
   migrations/

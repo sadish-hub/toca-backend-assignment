@@ -63,7 +63,7 @@ Prefer testing observable behavior over implementation details. Mock at boundari
 
 - **Module boundaries:** Controllers → Services → TypeORM repositories/entities. Keep HTTP concerns out of services; keep SQL/ORM details out of controllers.
 - **DTOs + validation:** Use `class-validator` / `class-transformer` on request DTOs. Reject invalid payloads with `400`.
-- **Errors:** `404` for missing pack on content lookup; `400` for bad input / cycle introduction. Consistent error response shape.
+- **Errors:** `404` for missing pack on content lookup; `400` for bad input / self-child. Consistent error response shape.
 - **Entities:** Match the data model in `docs/ARCHITECTURE.md` (`packs`, `pack_children`, `pack_contents`). String business IDs (e.g. `pack.school`).
 - **Content resolution:** Traverse child packs (BFS/DFS), accumulate unique content, protect against cycles. Cover nested + cycle cases in tests.
 - **TypeScript:** Prefer explicit types at public APIs; avoid `any`. Use NestJS DI properly; no service locators.
